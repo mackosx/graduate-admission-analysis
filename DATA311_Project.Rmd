@@ -50,5 +50,6 @@ plot(test)
 
 How about some Classification?
 Let's try knn
+
 ```
 
