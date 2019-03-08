@@ -2,7 +2,7 @@
 title: "DATA311_Project"
 author: "Parsa"
 date: '2019-03-07'
-output: html_document
+output: pdf_document
 ---
 
 ```{r setup, include=FALSE}
@@ -12,8 +12,17 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r}
 test <- read.csv("Admission_Predict_Ver1.1.csv")
 #summary (test)
-View(test)
+head(test)
 #Admission_Predict_Ver1.1 <- read.csv("~/Google Drive/Year 3 - S2 Class Files/DATA 311/Project/graduate-admissions/Admission_Predict_Ver1.1.csv")
 #View(Admission_Predict_Ver1.1)
+```
+
+```{r}
+attach(test)
+University.Rating <- factor(University.Rating)
+Research <- factor(Research)
+logmod <- glm(University.Rating ~., data=test)
+summary(logmod)
+plot(logmod)
 ```
 
