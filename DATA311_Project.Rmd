@@ -8,48 +8,54 @@ output: pdf_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(FNN)
-
 ```
+
 ```{r}
 test <- read.csv("Admission_Predict_Ver1.1.csv")
 #summary (test)
 head(test)
-#Admission_Predict_Ver1.1 <- read.csv("~/Google Drive/Year 3 - S2 Class Files/DATA 311/Project/graduate-admissions/Admission_Predict_Ver1.1.csv")
-#View(Admission_Predict_Ver1.1)
+
+
+linear.full <- lm(Chance.of.Admit ~., data=test)
+linear.null <- lm(Chance.of.Admit ~ 1, data=test)
+
+linear.rank.full <- lm(University.Rating ~., data=test)
+linear.null.full <- lm(University.Rating ~ 1, data=test)
 ```
 
-##Logmod Analysis and Plots
-Here's a logmod analysis. No variable selection performed though.
 
-```{r}
-attach(test)
-University.Rating <- factor(University.Rating)
-Research <- factor(Research)
-logmod <- glm(University.Rating ~., data=test)
-summary(logmod)
-plot(logmod)
-```
+
 ##Linear Regression and some plots
-
 Here's a linear model with a few plots.
 
+```{r}
+linear <- lm(Chance.of.Admit ~., data=test)
+summary(linear)
+plot(linear)
+```
 ```{r}
 linear <- lm(University.Rating ~., data=test)
 summary(linear)
 plot(linear)
 ```
 
-##More Plots
+By performing backwards selection, we will remove the least significant values until all values are significant.
 
-Here's a bunch of scatterplots. 
 ```{r}
-plot(test)
+linear <- lm(Chance.of.Admit~ Serial.No. + GRE.Score + TOEFL.Score + SOP + LOR + CGPA + Research + University.Rating )
+summary(linear)
+
+#Remove University Ranking because it has the highest non significant p value
+linear <- lm(Chance.of.Admit~ Serial.No. + GRE.Score + TOEFL.Score + SOP +LOR + CGPA + Research )
+summary(linear)
+
+
+#Remove SOP has the second highest non significant p value
+linear <- lm(Chance.of.Admit~ Serial.No. + GRE.Score + TOEFL.Score +LOR + CGPA + Research )
+#All variables are now significant
+summary(linear)
+
 ```
 
-##Classification
 
-How about some Classification?
-Let's try knn
-
-```
 
