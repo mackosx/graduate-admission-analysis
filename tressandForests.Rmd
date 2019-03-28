@@ -1,0 +1,58 @@
+---
+title: "Decision Trees and Random Forests"
+author: "Cameron Chong"
+date: '2019-03-27'
+output: html_document
+---
+```{r}
+library(tree)
+library(MASS)
+admissionsData <- read.csv("Admission_Predict_Ver1.1.csv", header = TRUE)
+#head(admissionsData)
+dim(admissionsData)
+trainindex <- sample(1:nrow(admissionsData), 350)
+admissionsTrain <- admissionsData[trainindex, ]
+admissionsTest <- admissionsData[-trainindex, ]
+```
+I am going to do a 70/30 split of trainibg and testing data. There are 500 observations so we will have 350 training observations and 30 testing points. 
+```{r}
+
+set.seed(110101010)
+admissionTree <- tree(Chance.of.Admit~., data = admissionsTest)
+plot(admissionTree)
+text(admissionTree, pretty=0)
+
+
+admissionTreeCV <- cv.tree(admissionTree, FUN = prune.tree)
+plot(admissionTreeCV, type = "b")
+
+```
+Cross validation suggest that 4 terminal nodes would be best, so we will prune the tree using 8. 
+
+```{r}
+pruneAdmissionTreeCV <- prune.tree(admissionTree, best=4)
+plot(pruneAdmissionTreeCV)
+text(pruneAdmissionTreeCV, pretty = 0)
+summary(pruneAdmissionTreeCV)
+
+
+```
+
+
+```{r}
+library(randomForest)
+set.seed(1000101010)
+admission.rf <- randomForest(Chance.of.Admit~., data = admissionsTest, importance = TRUE)
+admission.rf
+```
+
+Since Random Forest uses out-of-bag which is similar to cross validation so no cross validation was performed. We can look at the importance of the variables.
+
+
+```{r}
+varImpPlot(admission.rf)
+```
+
+As seen from the Importance Plot the most important variables are most CGPA, GRE Score and TOEFL scores are the most important 
+
+
