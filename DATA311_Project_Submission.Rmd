@@ -1,0 +1,75 @@
+---
+title: "DATA311_Project_Submission"
+author: "Jeff B"
+date: "March 25, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(FNN)
+library(mvtnorm)
+library(mclust)
+library(cluster)
+library(fpc)
+```
+
+First, let's take a look at our data
+```{r}
+test <- read.csv("Admission_Predict_Ver1.1.csv")
+#summary (test)
+head(test)
+attach(test)
+plot(test)
+```
+
+### Clustering
+
+Naively, we can start by computing the respective pairwise distances, and try k-means clustering 
+```{r}
+dg<-daisy(test, metric="gower")
+pdist <- cmdscale(d=dg)
+plot(pdist)
+```
+
+Two clear groups appear, so we can use k-means clustering with $k=2$ to try and get those
+```{r}
+#set.seed(413)
+km <- kmeans(pdist, centers = 2)
+plotcluster(pdist, km$cluster)
+```
+
+That doesn't get us the groups we expect, so we can try hierarchical clustering instead.
+
+```{r}
+length(pdist)
+```
+```{r}
+hm <- hclust(na.omit(dg), method="complete")
+pairs(pdist, col=cutree(hm,2))
+#plot(pdist)
+```
+With hierarchical clustering, we also don't get the groups we expect, but at this point, let's note that this is likely not a great grouping of our data anyway. Instead, if we take another look at the original scatterplot data, we'll notice that the only relationships that seem obvious to perform clustering on involve research. So let's see if we can use other variables to predict whether or not a student performs research.
+
+```{r}
+d1 <- daisy(as.matrix(test["Research", "Serial.No."]), metric="gower")
+d2 <- daisy(as.matrix(test["Research", "GRE.Score"]), metric="gower")
+d3 <- daisy(as.matrix(test["Research", "TOEFL.Score"]), metric="gower")
+d4 <- daisy(as.matrix(test["Research", "University.Rating"]), metric="gower")
+d5 <- daisy(as.matrix(test["Research", "SOP"]), metric="gower")
+d6 <- daisy(as.matrix(test["Research", "LOR"]), metric="gower")
+d7 <- daisy(as.matrix(test["Research", "CGPA"]), metric="gower")
+d8 <- daisy(as.matrix(test["Research", "Chance.of.Admit"]), metric="gower")
+
+d1
+d2
+d3
+d4
+d5
+d6
+d7
+d8
+```
+
+
+
