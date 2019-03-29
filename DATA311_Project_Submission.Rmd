@@ -42,10 +42,8 @@ plotcluster(pdist, km$cluster)
 That doesn't get us the groups we expect, so we can try hierarchical clustering instead.
 
 ```{r}
-length(pdist)
-```
-```{r}
 hms <- hclust(na.omit(dg), method="single")
+plot(hms)
 pairs(pdist, col=cutree(hms,2))
 #plot(pdist)
 ```
@@ -55,19 +53,7 @@ pairs(test, col=cutree(hms,2))
 ```
 We notice that, using the single linkage chaining from above, we can predict whether or not a student performs research almost perfectly. Additionally, we get decent results pertaining to the Chance of Admission and the GRE Score. Based on these clustering results, our two groups (Research and Non-Research) divide up pretty well as follows: In general, Research has a higher chance of admission than Non-Research, as well as a higher GRE and TOEFL score. 
 
-So, by applying Gower's Distance on all predictors and using single-linkage chaining, we are able to perfectly predict the presence of a Research variable. However, since our model predicts with 100% accuracy, this is almost certainly overfitting the data. So next we'll split our data into training and testing data and see how we do.
-```{r}
-smp_size <- floor(0.6 * nrow(test))
-
-train_ind <- sample(seq_len(nrow(test)), size = smp_size)
-
-testtrain <- test[train_ind, ]
-testtest <- test[-train_ind, ]
-
-dgt<-daisy(testtrain, metric="gower")
-hms <- hclust(na.omit(dgt), method="single")
-predict(cutree(hms, 2), data=testtest)
-```
+So, by applying Gower's Distance on all predictors and using single-linkage chaining, we have two clear clusters directly coinciding with the presence of a research variable. From here, we can try and run some predictive models using research as the response variable.
 
 
 
