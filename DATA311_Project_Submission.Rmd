@@ -45,30 +45,28 @@ That doesn't get us the groups we expect, so we can try hierarchical clustering 
 length(pdist)
 ```
 ```{r}
-hm <- hclust(na.omit(dg), method="complete")
-pairs(pdist, col=cutree(hm,2))
+hms <- hclust(na.omit(dg), method="single")
+pairs(pdist, col=cutree(hms,2))
 #plot(pdist)
 ```
-With hierarchical clustering, we also don't get the groups we expect, but at this point, let's note that this is likely not a great grouping of our data anyway. Instead, if we take another look at the original scatterplot data, we'll notice that the only relationships that seem obvious to perform clustering on involve research. So let's see if we can use other variables to predict whether or not a student performs research.
-
+With hierarchical clustering, we can get the groups we expect using single linkage chaining. Since this was a naive attempt using all variables, let's see if we can determine what actually affects which data goes into which cluster. 
 ```{r}
-d1 <- daisy(as.matrix(test["Research", "Serial.No."]), metric="gower")
-d2 <- daisy(as.matrix(test["Research", "GRE.Score"]), metric="gower")
-d3 <- daisy(as.matrix(test["Research", "TOEFL.Score"]), metric="gower")
-d4 <- daisy(as.matrix(test["Research", "University.Rating"]), metric="gower")
-d5 <- daisy(as.matrix(test["Research", "SOP"]), metric="gower")
-d6 <- daisy(as.matrix(test["Research", "LOR"]), metric="gower")
-d7 <- daisy(as.matrix(test["Research", "CGPA"]), metric="gower")
-d8 <- daisy(as.matrix(test["Research", "Chance.of.Admit"]), metric="gower")
+pairs(test, col=cutree(hms,2))
+```
+We notice that, using the single linkage chaining from above, we can predict whether or not a student performs research almost perfectly. Additionally, we get decent results pertaining to the Chance of Admission and the GRE Score. Based on these clustering results, our two groups (Research and Non-Research) divide up pretty well as follows: In general, Research has a higher chance of admission than Non-Research, as well as a higher GRE and TOEFL score. 
 
-d1
-d2
-d3
-d4
-d5
-d6
-d7
-d8
+So, by applying Gower's Distance on all predictors and using single-linkage chaining, we are able to perfectly predict the presence of a Research variable. However, since our model predicts with 100% accuracy, this is almost certainly overfitting the data. So next we'll split our data into training and testing data and see how we do.
+```{r}
+smp_size <- floor(0.6 * nrow(test))
+
+train_ind <- sample(seq_len(nrow(test)), size = smp_size)
+
+testtrain <- test[train_ind, ]
+testtest <- test[-train_ind, ]
+
+dgt<-daisy(testtrain, metric="gower")
+hms <- hclust(na.omit(dgt), method="single")
+predict(cutree(hms, 2), data=testtest)
 ```
 
 
