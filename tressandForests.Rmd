@@ -9,6 +9,7 @@ library(tree)
 library(MASS)
 library(randomForest)
 admissionsData <- read.csv("Admission_Predict_Ver1.1.csv", header = TRUE)
+admissionsData <- admissionsData[,-1]
 #head(admissionsData)
 dim(admissionsData)
 trainindex <- sample(1:nrow(admissionsData), 350)
@@ -29,11 +30,14 @@ admissionTreeCV <- cv.tree(admissionTree, FUN = prune.tree, K = 10)
 plot(admissionTreeCV, type = "b")
 admissionTreeCV
 
+admissionTreeCV$dev
+admissionTreeCV$size
+which.min(admissionTreeCV$dev)
 ```
-Cross validation suggest 3 nodes would be best, so we will prune the tree using 3 terminal nodes. 
+Cross validation suggest 6 nodes would be best, so we will prune the tree using 6 terminal nodes. 
 
 ```{r}
-pruneAdmissionTreeCV <- prune.tree(admissionTree, best=4)
+pruneAdmissionTreeCV <- prune.tree(admissionTree, best=6)
 plot(pruneAdmissionTreeCV)
 text(pruneAdmissionTreeCV, pretty = 0)
 summary(pruneAdmissionTreeCV)
@@ -72,11 +76,16 @@ researchTreeCV <- cv.tree(researchTree, FUN = prune.tree, K = 10)
 plot(researchTreeCV, type = "b")
 researchTreeCV
 
+
+researchTreeCV$dev
+researchTreeCV$size
+which.min(researchTreeCV$dev)
+
 ```
-Cross Validation Suggests 2 terminal nodes would be best.
+Cross Validation Suggests 3 terminal nodes would be best.
 
 ```{r}
-pruneResearchTreeCV <- prune.tree(researchTree, best=4)
+pruneResearchTreeCV <- prune.tree(researchTree, best=3)
 plot(pruneResearchTreeCV)
 text(pruneResearchTreeCV, pretty = 0)
 summary(pruneResearchTreeCV)
