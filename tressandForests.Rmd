@@ -70,13 +70,13 @@ text(researchTree, pretty=0)
 
 researchTreeCV <- cv.tree(researchTree, FUN = prune.tree, K = 10)
 plot(researchTreeCV, type = "b")
-researchTreeCV
+which.min(researchTreeCV$dev)
 
 ```
-Cross Validation suggests 2 terminal nodes would be best.
+Cross Validation suggests 6 terminal nodes would be best.
 
 ```{r}
-pruneResearchTreeCV <- prune.tree(researchTree, best=4)
+pruneResearchTreeCV <- prune.tree(researchTree, best=6)
 plot(pruneResearchTreeCV)
 text(pruneResearchTreeCV, pretty = 0)
 summary(pruneResearchTreeCV)
@@ -85,7 +85,7 @@ summary(pruneResearchTreeCV)
 
 
 ```{r}
-set.seed(7)
+set.seed(1413755523)
 research.rf <- randomForest(Research~., data = admissionsTrain, importance = TRUE)
 research.rf
 varImpPlot(research.rf)
