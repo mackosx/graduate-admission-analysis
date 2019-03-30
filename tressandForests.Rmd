@@ -71,12 +71,13 @@ text(researchTree, pretty=0)
 researchTreeCV <- cv.tree(researchTree, FUN = prune.tree, K = 10)
 plot(researchTreeCV, type = "b")
 which.min(researchTreeCV$dev)
+researchTreeCV$dev
 
 ```
-Cross Validation suggests 6 terminal nodes would be best.
+Cross Validation suggests 3 terminal nodes would be best.
 
 ```{r}
-pruneResearchTreeCV <- prune.tree(researchTree, best=6)
+pruneResearchTreeCV <- prune.tree(researchTree, best=3)
 plot(pruneResearchTreeCV)
 text(pruneResearchTreeCV, pretty = 0)
 summary(pruneResearchTreeCV)
