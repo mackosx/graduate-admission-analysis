@@ -2,7 +2,7 @@
 title: "Decision Trees and Random Forests"
 author: "Cameron Chong"
 date: '2019-03-27'
-output: html_document
+output: pdf_document
 ---
 ```{r}
 library(tree)
@@ -15,8 +15,8 @@ trainindex <- sample(1:nrow(admissionsData), 350)
 admissionsTrain <- admissionsData[trainindex, ]
 admissionsTest <- admissionsData[-trainindex, ]
 ```
-#Chance of Admitance 
-I am going to do a 70/30 split of trainibg and testing data. There are 500 observations so we will have 350 training observations and 150 testing points. 
+#Chance of Admittance 
+I am going to do a 70/30 split of training and testing data. There are 500 observations, so we will have 350 training observations and 150 testing points. 
 ```{r}
 
 set.seed(110101010)
@@ -56,7 +56,7 @@ Since Random Forest uses out-of-bag which is similar to cross validation so no c
 varImpPlot(admission.rf)
 ```
 
-As seen from the Importance Plot the most important variables are most CGPA, GRE Score and TOEFL scores are the most important when using chance of admission as a response variable. 
+As seen from the Importance Plot the most important variables are CGPA, GRE Score and TOEFL scores when using chance of admission as a response variable. 
 
 
 #Research
@@ -73,7 +73,7 @@ plot(researchTreeCV, type = "b")
 researchTreeCV
 
 ```
-Cross Validation Suggests 2 terminal nodes would be best.
+Cross Validation suggests 2 terminal nodes would be best.
 
 ```{r}
 pruneResearchTreeCV <- prune.tree(researchTree, best=4)
