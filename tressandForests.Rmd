@@ -7,6 +7,7 @@ output: html_document
 ```{r}
 library(tree)
 library(MASS)
+library(randomForest)
 admissionsData <- read.csv("Admission_Predict_Ver1.1.csv", header = TRUE)
 #head(admissionsData)
 dim(admissionsData)
@@ -14,20 +15,22 @@ trainindex <- sample(1:nrow(admissionsData), 350)
 admissionsTrain <- admissionsData[trainindex, ]
 admissionsTest <- admissionsData[-trainindex, ]
 ```
-I am going to do a 70/30 split of trainibg and testing data. There are 500 observations so we will have 350 training observations and 30 testing points. 
+#Chance of Admitance 
+I am going to do a 70/30 split of trainibg and testing data. There are 500 observations so we will have 350 training observations and 150 testing points. 
 ```{r}
 
 set.seed(110101010)
-admissionTree <- tree(Chance.of.Admit~., data = admissionsTest)
+admissionTree <- tree(Chance.of.Admit~., data = admissionsTrain)
 plot(admissionTree)
 text(admissionTree, pretty=0)
 
 
-admissionTreeCV <- cv.tree(admissionTree, FUN = prune.tree)
+admissionTreeCV <- cv.tree(admissionTree, FUN = prune.tree, K = 10)
 plot(admissionTreeCV, type = "b")
+admissionTreeCV
 
 ```
-Cross validation suggest that 4 terminal nodes would be best, so we will prune the tree using 8. 
+Cross validation suggest 3 nodes would be best, so we will prune the tree using 3 terminal nodes. 
 
 ```{r}
 pruneAdmissionTreeCV <- prune.tree(admissionTree, best=4)
@@ -40,9 +43,9 @@ summary(pruneAdmissionTreeCV)
 
 
 ```{r}
-library(randomForest)
+
 set.seed(1000101010)
-admission.rf <- randomForest(Chance.of.Admit~., data = admissionsTest, importance = TRUE)
+admission.rf <- randomForest(Chance.of.Admit~., data = admissionsTrain, importance = TRUE)
 admission.rf
 ```
 
@@ -53,6 +56,39 @@ Since Random Forest uses out-of-bag which is similar to cross validation so no c
 varImpPlot(admission.rf)
 ```
 
-As seen from the Importance Plot the most important variables are most CGPA, GRE Score and TOEFL scores are the most important 
+As seen from the Importance Plot the most important variables are most CGPA, GRE Score and TOEFL scores are the most important when using chance of admission as a response variable. 
 
+
+#Research
+
+```{r}
+set.seed(1388582293)
+researchTree <- tree(Research~., data = admissionsTrain)
+plot(researchTree)
+text(researchTree, pretty=0)
+
+
+researchTreeCV <- cv.tree(researchTree, FUN = prune.tree, K = 10)
+plot(researchTreeCV, type = "b")
+researchTreeCV
+
+```
+Cross Validation Suggests 2 terminal nodes would be best.
+
+```{r}
+pruneResearchTreeCV <- prune.tree(researchTree, best=4)
+plot(pruneResearchTreeCV)
+text(pruneResearchTreeCV, pretty = 0)
+summary(pruneResearchTreeCV)
+```
+
+
+
+```{r}
+set.seed(7)
+research.rf <- randomForest(Research~., data = admissionsTrain, importance = TRUE)
+research.rf
+varImpPlot(research.rf)
+
+```
 
