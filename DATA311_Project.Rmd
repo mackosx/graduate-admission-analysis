@@ -21,7 +21,9 @@ linear.null <- lm(Chance.of.Admit ~ 1, data=test)
 
 linear.rank.full <- lm(University.Rating ~., data=test)
 linear.null.full <- lm(University.Rating ~ 1, data=test)
+
 ```
+
 
 
 
