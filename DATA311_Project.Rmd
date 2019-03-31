@@ -8,6 +8,10 @@ output: pdf_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(FNN)
+library(mvtnorm)
+library(mclust)
+library(cluster)
+library(fpc)
 library(boot)
 ```
 
@@ -19,6 +23,7 @@ attach(admissionsData)
 #View(Admission_Predict_Ver1.1)
 ```
 
+## Principal Component Analysis
 ## With Response Variable Chance.of.Admit
 
 The variable we are interested in predicting, Chance.of.Admit, is the 9th variable.  
@@ -153,6 +158,39 @@ admissionsData[order(pca.admin2$x[,2], decreasing = TRUE)[1:4], 1:9]
 As hypothesized above, the first four students in PC2 are scoring higher on their standardized tests (GRE.Score and TOEFL.Score).  These students are performing the at, or above average on these standardized tests.  However, they all have a below average score on SOP, and LOR.  The CGPA of the students scoring high on PC2 hovers fairly close to the mean.  This proves the initial hypothesis that standardized testing is most important for PC2.  
 
 
+### Clustering
+
+Naively, we can start by computing the respective pairwise distances, and try k-means clustering 
+```{r}
+dg<-daisy(test, metric="gower")
+pdist <- cmdscale(d=dg)
+plot(pdist)
+```
+
+Two clear groups appear, so we can use k-means clustering with $k=2$ to try and get those
+```{r}
+#set.seed(413)
+km <- kmeans(pdist, centers = 2)
+plotcluster(pdist, km$cluster)
+```
+
+That doesn't get us the groups we expect, so we can try hierarchical clustering instead.
+
+```{r}
+hms <- hclust(na.omit(dg), method="single")
+plot(hms)
+pairs(pdist, col=cutree(hms,2))
+#plot(pdist)
+```
+With hierarchical clustering, we can get the groups we expect using single linkage chaining. Since this was a naive attempt using all variables, let's see if we can determine what actually affects which data goes into which cluster. 
+```{r}
+pairs(test, col=cutree(hms,2))
+```
+We notice that, using the single linkage chaining from above, we can predict whether or not a student performs research almost perfectly. Additionally, we get decent results pertaining to the Chance of Admission and the GRE Score. Based on these clustering results, our two groups (Research and Non-Research) divide up pretty well as follows: In general, Research has a higher chance of admission than Non-Research, as well as a higher GRE and TOEFL score. 
+
+So, by applying Gower's Distance on all predictors and using single-linkage chaining, we have two clear clusters directly coinciding with the presence of a research variable. From here, we can try and run some predictive models using research as the response variable.
+
+
 ##Logmod Analysis and Plots
 Here's a logmod analysis. No variable selection performed though.
 
@@ -170,11 +208,6 @@ linear.rank.full <- lm(University.Rating ~., data=admissionsData)
 linear.null.full <- lm(University.Rating ~ 1, data=admissionsData)
 
 ```
-<<<<<<< HEAD
-
-##Linear Regression and some plots
-=======
->>>>>>> chelsey
 
 
 
@@ -306,13 +339,6 @@ msecv[i] <- (predict(cvlm[[i]], newdata = data.frame(GRE.Score[-i] + University.
 mean(msecv)
 ```
 
-<<<<<<< HEAD
-<!--##Classification
-
-How about some Classification?
-Let's try knn
--->
-=======
 
 #Variable Selection for University Ranking
 ```{r}
@@ -335,7 +361,6 @@ summary(linear)
 #CV for linear model - University Rating
 ```{r,warning=FALSE}
 set.seed(7861)
->>>>>>> chelsey
 
 cvlm <- list()
 msecv <- NA
