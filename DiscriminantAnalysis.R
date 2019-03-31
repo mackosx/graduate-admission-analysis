@@ -74,13 +74,14 @@ graduateAdmissions.nnAllData <- neuralnet(Research ~ ., data = graduateAdmission
 
 
 # Training/Testing Set
-ind <- sample(1:nrow(graduateAdmissions.normalizedNumeric), 200)
+ind <- sample(1:nrow(graduateAdmissions.normalizedNumeric), 250)
 train <- graduateAdmissions.normalizedNumeric[ind,]
 test <- graduateAdmissions.normalizedNumeric[-ind,]
 
 graduateAdmissions.nnWithTrain <- neuralnet(Research ~ ., data = train, hidden = 5, linear.output = FALSE, stepmax = 1e+06)
+predicted = data.frame(round(predict(graduateAdmissions.nnWithTrain, graduateAdmissions.normalizedNumeric, type = "class"), 0))$X2
+table(predicted, actual = graduateAdmissions.normalizedNumeric$Research)
 
-table(predict(graduateAdmissions.nnWithTrain, graduateAdmissions.normalizedNumeric, type = "class"), graduateAdmissions.normalizedNumeric$Research)
-
-
-
+Sensitivity(graduateAdmissions.normalizedNumeric$Research, predicted)
+Accuracy(graduateAdmissions.normalizedNumeric$Research, predicted)
+F1_Score(graduateAdmissions.normalizedNumeric$Research, predicted)
