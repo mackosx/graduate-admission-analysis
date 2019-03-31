@@ -13,6 +13,9 @@ library(mclust)
 library(cluster)
 library(fpc)
 library(boot)
+library(tree)
+library(MASS)
+library(randomForest)
 ```
 
 ```{r}
@@ -162,7 +165,7 @@ As hypothesized above, the first four students in PC2 are scoring higher on thei
 
 Naively, we can start by computing the respective pairwise distances, and try k-means clustering 
 ```{r}
-dg<-daisy(test, metric="gower")
+dg<-daisy(admissionsData, metric="gower")
 pdist <- cmdscale(d=dg)
 plot(pdist)
 ```
@@ -184,7 +187,7 @@ pairs(pdist, col=cutree(hms,2))
 ```
 With hierarchical clustering, we can get the groups we expect using single linkage chaining. Since this was a naive attempt using all variables, let's see if we can determine what actually affects which data goes into which cluster. 
 ```{r}
-pairs(test, col=cutree(hms,2))
+pairs(admissionsData, col=cutree(hms,2))
 ```
 We notice that, using the single linkage chaining from above, we can predict whether or not a student performs research almost perfectly. Additionally, we get decent results pertaining to the Chance of Admission and the GRE Score. Based on these clustering results, our two groups (Research and Non-Research) divide up pretty well as follows: In general, Research has a higher chance of admission than Non-Research, as well as a higher GRE and TOEFL score. 
 
@@ -281,7 +284,7 @@ msebs <- NA
 B <- 5000
 bootcoef <- matrix(nrow = B, ncol=length(linear$coefficients))
 for(i in 1:B){
-  newboots[[i]] <- test[sample(1:nrow(admissionsData), nrow(admissionsData), replace=TRUE),]
+  newboots[[i]] <- admissionsData[sample(1:nrow(admissionsData), nrow(admissionsData), replace=TRUE),]
   bootsmod[[i]] <- lm(University.Rating~., data=newboots[[i]])
   for(j in 1:length(linear$coefficients)){
     bootcoef[i,j] <- bootsmod[[i]]$coefficients[j]
@@ -374,4 +377,99 @@ msecv[i] <- (predict(cvlm[[i]], newdata = data.frame(TOEFL.Score[-i] + SOP[-i] +
 #output mean of MSE
 mean(msecv)
 ```
+
+#Trees and Forests
+
+```{r}
+admissionsData <- admissionsData[,-1]
+#head(admissionsData)
+dim(admissionsData)
+trainindex <- sample(1:nrow(admissionsData), 350)
+admissionsTrain <- admissionsData[trainindex, ]
+admissionsTest <- admissionsData[-trainindex, ]
+```
+
+#Chance of Admittance 
+I am going to do a 70/30 split of training and testing data. There are 500 observations, so we will have 350 training observations and 150 testing points. 
+```{r}
+
+set.seed(110101010)
+admissionTree <- tree(Chance.of.Admit~., data = admissionsTrain)
+plot(admissionTree)
+text(admissionTree, pretty=0)
+
+
+admissionTreeCV <- cv.tree(admissionTree, FUN = prune.tree, K = 10)
+plot(admissionTreeCV, type = "b")
+admissionTreeCV
+
+admissionTreeCV$dev
+admissionTreeCV$size
+which.min(admissionTreeCV$dev)
+```
+Cross validation suggest 7 nodes would be best, so we will prune the tree using 7 terminal nodes. 
+
+```{r}
+pruneAdmissionTreeCV <- prune.tree(admissionTree, best=7)
+plot(pruneAdmissionTreeCV)
+text(pruneAdmissionTreeCV, pretty = 0)
+summary(pruneAdmissionTreeCV)
+
+
+```
+
+
+```{r}
+
+set.seed(1000101010)
+admission.rf <- randomForest(Chance.of.Admit~., data = admissionsTrain, importance = TRUE)
+admission.rf
+```
+
+Since Random Forest uses out-of-bag which is similar to cross validation so no cross validation was performed. We can look at the importance of the variables.
+
+
+```{r}
+varImpPlot(admission.rf)
+```
+
+As seen from the Importance Plot the most important variables are CGPA, GRE Score and TOEFL scores when using chance of admission as a response variable. 
+
+
+#Research
+
+```{r}
+set.seed(1388582293)
+researchTree <- tree(Research~., data = admissionsTrain)
+plot(researchTree)
+text(researchTree, pretty=0)
+
+
+researchTreeCV <- cv.tree(researchTree, FUN = prune.tree, K = 10)
+plot(researchTreeCV, type = "b")
+which.min(researchTreeCV$dev)
+researchTreeCV$dev
+
+researchTreeCV$dev
+researchTreeCV$size
+which.min(researchTreeCV$dev)
+```
+
+Cross Validation Suggests 3 terminal nodes would be best.
+
+```{r}
+pruneResearchTreeCV <- prune.tree(researchTree, best=3)
+plot(pruneResearchTreeCV)
+text(pruneResearchTreeCV, pretty = 0)
+summary(pruneResearchTreeCV)
+```
+
+```{r}
+set.seed(1413755523)
+research.rf <- randomForest(Research~., data = admissionsTrain, importance = TRUE)
+research.rf
+varImpPlot(research.rf)
+
+```
+
 
