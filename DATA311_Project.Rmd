@@ -8,9 +8,11 @@ output: pdf_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(FNN)
-
+library(boot)
 ```
+
 ```{r}
+<<<<<<< HEAD
 admissionsData <- read.csv("Admission_Predict_Ver1.1.csv")
 #summary (admissionsData)
 attach(admissionsData)
@@ -161,28 +163,178 @@ Research <- factor(Research)
 logmod <- glm(University.Rating ~., data=admissionsData)
 summary(logmod)
 plot(logmod)
-```
-##Linear Regression and some plots
 
+linear.full <- lm(Chance.of.Admit ~., data=admissionsData)
+linear.null <- lm(Chance.of.Admit ~ 1, data=admissionsData)
+
+linear.rank.full <- lm(University.Rating ~., data=admissionsData)
+linear.null.full <- lm(University.Rating ~ 1, data=admissionsData)
+
+```
+
+
+
+##Linear Regression and some plots
 Here's a linear model with a few plots.
 
 ```{r}
-linear <- lm(University.Rating ~., data=admissionsData)
+linear <- lm(Chance.of.Admit ~., data=admissionsData)
 summary(linear)
 plot(linear)
 ```
 
-##More Plots
-
-Here's a bunch of scatterplots. 
-```{r}
-plot(admissionsData)
+```{r, include=FALSE}
+# Other useful functions 
+coefficients(linear) # model coefficients
+confint(linear, level=0.95) # CIs for model parameters 
+fitted(linear) # predicted values
+residuals(linear) # residuals
+anova(linear) # anova table 
+vcov(linear) # covariance matrix for model parameters 
+influence(linear) # regression diagnostics
 ```
 
-##Classification
+#Variable Selection for Chance of Admittion
 
-How about some Classification?
-Let's try knn
+By performing backwards selection, we will remove the least significant values until all values are significant.
+```{r}
+linear <- lm(Chance.of.Admit~ ., data = admissionsData )
+summary(linear)
 
+#Remove University Ranking because it has the highest non significant p value
+linear <- lm(Chance.of.Admit~ Serial.No. + GRE.Score + TOEFL.Score + SOP +LOR + CGPA + Research , data = admissionsData )
+summary(linear)
+
+
+#Remove SOP has the second highest non significant p value
+linear <- lm(Chance.of.Admit~ Serial.No. + GRE.Score + TOEFL.Score +LOR + CGPA + Research , data = admissionsData )
+#All variables are now significant
+summary(linear)
+```
+
+#CV for linear model - Chance of Admission
+```{r,, warning=FALSE}
+set.seed(7861)
+
+cvlm <- list()
+msecv <- NA
+coef <-matrix(nrow = 500, ncol=length(linear$coefficients))
+for(i in 1:nrow(admissionsData)){
+  #Fit the linear model
+cvlm[[i]] <- lm(Chance.of.Admit[-i] ~ Serial.No.[-i] + GRE.Score[-i] + TOEFL.Score[-i] +LOR[-i] + CGPA[-i] + Research[-i])
+# Calculate MSE for ith model
+msecv[i] <- (predict(cvlm[[i]], newdata = data.frame(Serial.No.[-i] + GRE.Score[-i] + TOEFL.Score[-i] +LOR[-i] + CGPA[-i] + Research[-i]))-Chance.of.Admit[i])^2
+#coef[[i]] <- cvlm[[i]]$coefficients
+  for(j in 1:length(linear$coefficients)){
+    coef[i,j] <- cvlm[[i]]$coefficients[j]
+  }
+#msecv[i]
+}
+#output mean of MSE
+mean(msecv)
+```
+#The chance of being admitted to univeristy is +/- 6.66%.   
+<!---Check this conclusion. Not certain this is quite right. You also may have missed a - in the msecv command -->
+
+<!--#Bootstrap for linear model - Chance of Admission-->
+```{r, include=FALSE, eval=FALSE, warning=FALSE}
+newboots <- list()
+bootsmod <- list()
+msebs <- NA
+B <- 5000
+bootcoef <- matrix(nrow = B, ncol=length(linear$coefficients))
+for(i in 1:B){
+  newboots[[i]] <- test[sample(1:nrow(admissionsData), nrow(admissionsData), replace=TRUE),]
+  bootsmod[[i]] <- lm(University.Rating~., data=newboots[[i]])
+  for(j in 1:length(linear$coefficients)){
+    bootcoef[i,j] <- bootsmod[[i]]$coefficients[j]
+  }
+  #msebs[i] <- (predict(bootsmod[[i]], newdata = data.frame(Serial.No.[-i] + GRE.Score[-i] + TOEFL.Score[-i] +LOR[-i] + CGPA[-i] + Research[-i]))-Chance.of.Admit[i])^2
+}
+summary(linear)$coefficients[,2]
+c(sd(bootcoef[,1]),sd(bootcoef[,2]),sd(bootcoef[,3]),sd(bootcoef[,4]),sd(bootcoef[,5]),sd(bootcoef[,6]),sd(bootcoef[,7]))
+c(sd(coef[,1]),sd(coef[,2]),sd(coef[,3]),sd(coef[,4]),sd(coef[,5]),sd(coef[,6]),sd(coef[,7])) 
+
+```
+
+#Variable Selection for Research 
+
+```{r}
+linear <- lm(Research~ Serial.No. + GRE.Score + TOEFL.Score + University.Rating + SOP +LOR + CGPA, data = admissionsData )
+#summary(linear)
+
+#Remove LOR
+linear <- lm(Research~ Serial.No. + GRE.Score + TOEFL.Score + University.Rating  +LOR + CGPA, data = admissionsData )
+summary(linear)
+
+#Remove CGPA
+linear <- lm(Research~ Serial.No. + GRE.Score + TOEFL.Score + University.Rating  +LOR, data = admissionsData )
+summary(linear)
+
+#Remove LOR
+linear <- lm(Research~ Serial.No. + GRE.Score + TOEFL.Score + University.Rating, data = admissionsData )
+summary(linear)
+
+#Remove TOEFL
+linear <- lm(Research~ Serial.No. + GRE.Score + University.Rating, data = admissionsData )
+summary(linear)
+
+#Remove Serial Number
+linear <- lm(Research~ + GRE.Score + University.Rating, data = admissionsData )
+summary(linear)
+
+```
+
+#CV for linear model - Research
+```{r,, warning=FALSE}
+set.seed(7861)
+
+cvlm <- list()
+msecv <- NA
+for(i in 1:nrow(admissionsData)){
+  #Fit the linear model
+cvlm[[i]] <- lm(Research[-i] ~ GRE.Score[-i] + University.Rating[-i])
+# Calculate MSE for ith model
+msecv[i] <- (predict(cvlm[[i]], newdata = data.frame(GRE.Score[-i] + University.Rating[-i]))-Research[i])^2
+#msecv[i]
+}
+#output mean of MSE
+mean(msecv)
+```
+
+
+#Variable Selection for University Ranking
+```{r}
+linear <- lm(University.Rating~ Serial.No. + GRE.Score + TOEFL.Score + SOP +LOR + CGPA + Research, data = admissionsData )
+summary(linear)
+
+#Remove Serial Number
+linear <- lm(University.Rating~  GRE.Score + TOEFL.Score + SOP +LOR + CGPA + Research, data = admissionsData )
+summary(linear)
+
+#Remove GRE
+linear <- lm(University.Rating~   TOEFL.Score + SOP +LOR + CGPA + Research, data = admissionsData )
+summary(linear)
+
+#Remove Research
+linear <- lm(University.Rating~   TOEFL.Score + SOP +LOR + CGPA, data = admissionsData )
+summary(linear)
+```
+
+#CV for linear model - University Rating
+```{r,warning=FALSE}
+set.seed(7861)
+
+cvlm <- list()
+msecv <- NA
+for(i in 1:nrow(admissionsData)){
+  #Fit the linear model
+cvlm[[i]] <- lm(University.Rating[-i] ~ TOEFL.Score[-i] + SOP[-i] + LOR[-1] + CGPA[-i])
+# Calculate MSE for ith model
+msecv[i] <- (predict(cvlm[[i]], newdata = data.frame(TOEFL.Score[-i] + SOP[-i] + LOR[-1] + CGPA[-i]))-University.Rating[i])^2
+#msecv[i]
+}
+#output mean of MSE
+mean(msecv)
 ```
 
