@@ -2,12 +2,13 @@
 title: "DATA311_Project"
 author: "Parsa"
 date: '2019-03-07'
-output: html_document
+output: pdf_document
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(FNN)
+library(boot)
 ```
 
 ```{r}
@@ -71,24 +72,50 @@ summary(linear)
 
 ```
 
-#CV for linear model - Chance of Admittion
-```{r,eval, warning=FALSE}
+#CV for linear model - Chance of Admission
+```{r,, warning=FALSE}
 set.seed(7861)
 
 cvlm <- list()
 msecv <- NA
+coef <-matrix(nrow = 500, ncol=length(linear$coefficients))
 for(i in 1:nrow(test)){
   #Fit the linear model
 cvlm[[i]] <- lm(Chance.of.Admit[-i] ~ Serial.No.[-i] + GRE.Score[-i] + TOEFL.Score[-i] +LOR[-i] + CGPA[-i] + Research[-i])
 # Calculate MSE for ith model
 msecv[i] <- (predict(cvlm[[i]], newdata = data.frame(Serial.No.[-i] + GRE.Score[-i] + TOEFL.Score[-i] +LOR[-i] + CGPA[-i] + Research[-i]))-Chance.of.Admit[i])^2
+#coef[[i]] <- cvlm[[i]]$coefficients
+  for(j in 1:length(linear$coefficients)){
+    coef[i,j] <- cvlm[[i]]$coefficients[j]
+  }
 #msecv[i]
 }
 #output mean of MSE
 mean(msecv)
 ```
 #The chance of being admitted to univeristy is +/- 6.66%.   
+<!---Check this conclusion. Not certain this is quite right. You also may have missed a - in the msecv command -->
 
+<!--#Bootstrap for linear model - Chance of Admission-->
+```{r, include=FALSE, eval=FALSE, warning=FALSE}
+newboots <- list()
+bootsmod <- list()
+msebs <- NA
+B <- 5000
+bootcoef <- matrix(nrow = B, ncol=length(linear$coefficients))
+for(i in 1:B){
+  newboots[[i]] <- test[sample(1:nrow(test), nrow(test), replace=TRUE),]
+  bootsmod[[i]] <- lm(University.Rating~., data=newboots[[i]])
+  for(j in 1:length(linear$coefficients)){
+    bootcoef[i,j] <- bootsmod[[i]]$coefficients[j]
+  }
+  #msebs[i] <- (predict(bootsmod[[i]], newdata = data.frame(Serial.No.[-i] + GRE.Score[-i] + TOEFL.Score[-i] +LOR[-i] + CGPA[-i] + Research[-i]))-Chance.of.Admit[i])^2
+}
+summary(linear)$coefficients[,2]
+c(sd(bootcoef[,1]),sd(bootcoef[,2]),sd(bootcoef[,3]),sd(bootcoef[,4]),sd(bootcoef[,5]),sd(bootcoef[,6]),sd(bootcoef[,7]))
+c(sd(coef[,1]),sd(coef[,2]),sd(coef[,3]),sd(coef[,4]),sd(coef[,5]),sd(coef[,6]),sd(coef[,7])) 
+
+```
 
 #Variable Selection for Research 
 
@@ -119,7 +146,7 @@ summary(linear)
 ```
 
 #CV for linear model - Research
-```{r,eval, warning=FALSE}
+```{r,, warning=FALSE}
 set.seed(7861)
 
 cvlm <- list()
@@ -155,7 +182,7 @@ summary(linear)
 ```
 
 #CV for linear model - University Rating
-```{r,eval, warning=FALSE}
+```{r,warning=FALSE}
 set.seed(7861)
 
 cvlm <- list()
