@@ -12,7 +12,6 @@ library(boot)
 ```
 
 ```{r}
-<<<<<<< HEAD
 admissionsData <- read.csv("Admission_Predict_Ver1.1.csv")
 #summary (admissionsData)
 attach(admissionsData)
