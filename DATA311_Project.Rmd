@@ -1,7 +1,7 @@
 ---
 title: "DATA311_Project"
-author: "Parsa"
-date: '2019-03-07'
+author: "Parsa Rajabi, Chelsey Hvingelby, Mackenzie Salloum, Cameron Chong, Jeff Bulmer"
+date: '2019-03-31'
 output: pdf_document
 ---
 
@@ -17,6 +17,8 @@ head(test)
 #Admission_Predict_Ver1.1 <- read.csv("~/Google Drive/Year 3 - S2 Class Files/DATA 311/Project/graduate-admissions/Admission_Predict_Ver1.1.csv")
 #View(Admission_Predict_Ver1.1)
 ```
+
+
 
 ##Logmod Analysis and Plots
 Here's a logmod analysis. No variable selection performed though.
