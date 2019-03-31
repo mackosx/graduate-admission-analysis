@@ -75,50 +75,48 @@ We can now perform analyses on the data to attempt to predict a candidate's Chan
 
 Now that we've determined our response variables of interest using clustering, we can run Principal Component Analysis to further our understanding of our data. 
 
-### With Response Variable Chance.of.Admit
+## With Response Variable Chance.of.Admit
 
-The variable we are interested in predicting, Chance.of.Admit, is the 9th variable.  
+First, let's consider principal components in the context of predicting Chance of Admission.
 
-Run PCA on the data and remove the response variable (chance of admit) and the unique identifier (serial number)
-```{r}
+```{r, echo=FALSE}
 set.seed(43849)
+#remove Chance.of.Admit (Response variable, position 9) and Serial.No (unique identifier, position 1)
 pca.admin <- prcomp(as.matrix(admissionsData[,-c(1,9)]), scale = TRUE)
 summary(pca.admin)
 ```
 
-To choose the number of principal components to keep, we can either use the Kaiser criterion, cumulative proportion/percent of variance, or a scree plot.  
+Using the Kaiser criterion, we keep all principal components with a standard deviation greater than 1 (since the data is scaled).  Hence the Kaiser criterian tells us to keep the first principal component.  
 
-Using the Kaiser criterion, we keep all principal components with a standard deviation greater than 1 (since the data is scaled).  Hence the Kaiser criterian is telling us to keep the first principal component.  
-
-I will now compare this with a scree plot.  
-```{r}
+Comparing this with a scree plot.  
+```{r, echo=FALSE}
 plot(pca.admin, type="lines")
 ```
 
-The above scree plot plots the monotonically decreasing eigenvalues and the location of an 'elbow' or plateau indicates the number of principal components.  The scree plot suggests probably 2 principal components.
+The above scree plot shows the monotonically decreasing eigenvalues and the location of an 'elbow' or plateau indicates the number of principal components. The scree plot suggests 2 principal components.
 
 The first two principal components that will be retained explain 78% of the variation in the data.  We can now view the data projected onto the components using a biplot.  
 
-```{r}
+```{r, echo=FALSE}
 biplot(pca.admin)
 ```
 
 
-```{r}
+```{r, echo=FALSE, eval=FALSE}
 plot(pca.admin$x[,1:2])
 ```
 
-We can put data labels on the biplot by observation number 
-```{r}
+If we plot out our data, with PC1 on the x axis and PC2 on the y axis, we get the following plot
+```{r, echo=FALSE}
 plot(pca.admin$x[,1:2], type = "n")
 text(pca.admin$x[,1:2], labels = 1:nrow(admissionsData))
 ```
 
-It looks like there are two groups in the above principal component plots.  
+There appear to be two groups in the principal component plots. This is unsurprising, considering the Principal Components are an orthogonal rotation of the original data, which could also be modelled as two groups. 
 
 
-Take a look at the component loadings (eigenvectors) which provide the coefficients of the original variables, rounded to 2 decimal places.
-```{r}
+We can next look at the component loadings (eigenvectors) which provide the coefficients of the original variables, rounded to 2 decimal places.
+```{r, echo=FALSE}
 round(pca.admin$rotation[,1:2], 2)
 ```
 
@@ -128,14 +126,14 @@ In the second component, the highest magnitude is the research aspect, along wit
 
 
 We can now look at the four students who scored highest on PC1: 
-```{r}
+```{r, echo=FALSE}
 admissionsData[order(pca.admin$x[,1], decreasing = TRUE)[1:4],1:9]
 ```
 
-It is noted that the four students who performed highest on PC1 all had a low belief of their chance of admit.  None of them had research, and all had a similar cumulative GPA.  In addition, the universities where all rated low (1 to be exact) and the students had similar GRE and TOEFL scores (well below the average).  These students in general seem to be ones who are not performing scoring very well across all predictors.  
+It is notable that the four students who performed highest on PC1 all had a low belief of their chance of admit.  None of them had research, and all had a similar cumulative GPA.  In addition, the universities where all rated low (1 to be exact) and the students had similar GRE and TOEFL scores (well below the average).  These students in general seem to be ones who are not performing scoring very well across all predictors.  
 
 And the four students who scored highest on PC2:
-```{r}
+```{r, echo=FALSE}
 admissionsData[order(pca.admin$x[,2], decreasing = TRUE)[1:4], 1:9]
 ```
 
@@ -144,48 +142,44 @@ Notice that the four students who performed highest on PC2 all have research exp
 
 ## With Response Variable Research
 
-The variable we are interested in predicting, Chance.of.Admit, is the 8th variable.  
+Now, we consider running Principal Component Analysis while considering Research as our response variable. 
 
-Run PCA on the data and remove the response variable (research) and the unique identifier (serial number)
-```{r}
+```{r, echo=FALSE}
 set.seed(43849)
 pca.admin2 <- prcomp(as.matrix(admissionsData[,-c(1,8)]), scale = TRUE)
 summary(pca.admin2)
 ```
 
-To choose the number of principal components to keep, we can either use the Kaiser criterian, cumulative proportion/percent of variance, or a scree plot.  
+Using the Kaiser criterion, we would keep only the first principal component.  
 
-Using the Kaiser criterian, we keep all principal components with a standard deviation greater than 1 (since the data is scaled).  Hence the Kaiser criterian is telling us to keep the first principal component.  
-
-I will now compare this with a scree plot.  
-```{r}
+```{r, echo=FALSE}
 plot(pca.admin2, type="lines")
 ```
 
-The above scree plot plots the monotonically decreasing eigenvalues and the location of an 'elbow' or plateau indicates the number of principal components.  The scree plot suggests probably 2 principal components.
+Looking at the above scree plot, we would keep 2 principal components.
 
 The first two principal components that will be retained explain 84% of the variation in the data.  We can now view the data projected onto the components using a biplot.  
 
-```{r}
+```{r, echo=FALSE}
 biplot(pca.admin2)
 ```
 
 
-```{r}
+```{r, eval=FALSE, echo=FALSE}
 plot(pca.admin2$x[,1:2])
 ```
 
-We can put data labels on the biplot by observation number 
-```{r}
+```{r, echo=FALSE}
 plot(pca.admin2$x[,1:2], type = "n")
 text(pca.admin2$x[,1:2], labels = 1:nrow(admissionsData))
 ```
 
-It looks like there are two groups in the above principal component plots.  
+Again, we see the presence of two groups. 
 
 
-Take a look at the component loadings (eigenvectors) which provide the coefficients of the original variables, rounded to 2 decimal places.
-```{r}
+
+We can now look at the loadings for each Principal Component, rounded to 2 decimal places. 
+```{r, echo=FALSE}
 round(pca.admin2$rotation[,1:2], 2)
 ```
 
@@ -195,27 +189,25 @@ In the second component, the highest magnitude is the lettor of recommendation w
 
 
 We can now look at the four students who scored highest on PC1: 
-```{r}
+```{r, echo=FALSE}
 admissionsData[order(pca.admin2$x[,1], decreasing = TRUE)[1:4],1:9]
 ```
 
 The top four students in this first principal component are the same as the first four students in the previous PC1 (compared using Serial.No.).  Even when looking at the loadings, this principal component is very similar to the principal component in the previous section.  
 
 And the four students who scored highest on PC2:
-```{r}
+```{r, echo=FALSE}
 admissionsData[order(pca.admin2$x[,2], decreasing = TRUE)[1:4], 1:9]
 ```
 
-As hypothesized above, the first four students in PC2 are scoring higher on their standardized tests (GRE.Score and TOEFL.Score).  These students are performing the at, or above average on these standardized tests.  However, they all have a below average score on SOP, and LOR.  The CGPA of the students scoring high on PC2 hovers fairly close to the mean.  This proves the initial hypothesis that standardized testing is most important for PC2.  
+As hypothesized above, the first four students in PC2 are scoring higher on their standardized tests (GRE.Score and TOEFL.Score).  These students are performing the at, or above average on these standardized tests.  However, they all have a below average score on SOP, and LOR.  The CGPA of the students scoring high on PC2 hovers fairly close to the mean.  This supports the initial hypothesis that standardized testing is most important for PC2.  
 
+### Linear Models
 
-
-
-
-##Logmod Analysis and Plots
+## Logmod Analysis and Plots
 Here's a logmod analysis. No variable selection performed though.
 
-```{r}
+```{r, echo=FALSE}
 University.Rating <- factor(University.Rating)
 Research <- factor(Research)
 logmod <- glm(University.Rating ~., data=admissionsData)
@@ -232,16 +224,16 @@ linear.null.full <- lm(University.Rating ~ 1, data=admissionsData)
 
 
 
-##Linear Regression and some plots
+## Linear Regression and some plots
 Here's a linear model with a few plots.
 
-```{r}
+```{r, echo=FALSE}
 linear <- lm(Chance.of.Admit ~., data=admissionsData)
 summary(linear)
 plot(linear)
 ```
 
-```{r, include=FALSE}
+```{r, echo=FALSE, include=FALSE}
 # Other useful functions 
 coefficients(linear) # model coefficients
 confint(linear, level=0.95) # CIs for model parameters 
@@ -252,10 +244,10 @@ vcov(linear) # covariance matrix for model parameters
 influence(linear) # regression diagnostics
 ```
 
-#Variable Selection for Chance of Admittion
+# Variable Selection for Chance of Admittion
 
 By performing backwards selection, we will remove the least significant values until all values are significant.
-```{r}
+```{r, echo=FALSE}
 linear <- lm(Chance.of.Admit~ ., data = admissionsData )
 summary(linear)
 
@@ -270,8 +262,8 @@ linear <- lm(Chance.of.Admit~ Serial.No. + GRE.Score + TOEFL.Score +LOR + CGPA +
 summary(linear)
 ```
 
-#CV for linear model - Chance of Admission
-```{r,, warning=FALSE}
+# CV for linear model - Chance of Admission
+```{r,echo=FALSE, warning=FALSE}
 set.seed(7861)
 
 cvlm <- list()
@@ -295,7 +287,7 @@ mean(msecv)
 <!---Check this conclusion. Not certain this is quite right. You also may have missed a - in the msecv command -->
 
 <!--#Bootstrap for linear model - Chance of Admission-->
-```{r, include=FALSE, eval=FALSE, warning=FALSE}
+```{r, include=FALSE, echo=FALSE, eval=FALSE, warning=FALSE}
 newboots <- list()
 bootsmod <- list()
 msebs <- NA
@@ -317,7 +309,7 @@ c(sd(coef[,1]),sd(coef[,2]),sd(coef[,3]),sd(coef[,4]),sd(coef[,5]),sd(coef[,6]),
 
 #Variable Selection for Research 
 
-```{r}
+```{r, echo=FALSE}
 linear <- lm(Research~ Serial.No. + GRE.Score + TOEFL.Score + University.Rating + SOP +LOR + CGPA, data = admissionsData )
 #summary(linear)
 
@@ -344,7 +336,7 @@ summary(linear)
 ```
 
 #CV for linear model - Research
-```{r,, warning=FALSE}
+```{r,echo=FALSE, warning=FALSE}
 set.seed(7861)
 
 cvlm <- list()
@@ -361,7 +353,7 @@ mean(msecv)
 ```
 
 
-#Variable Selection for University Ranking
+<!-- #Variable Selection for University Ranking
 ```{r}
 linear <- lm(University.Rating~ Serial.No. + GRE.Score + TOEFL.Score + SOP +LOR + CGPA + Research, data = admissionsData )
 summary(linear)
@@ -395,10 +387,10 @@ msecv[i] <- (predict(cvlm[[i]], newdata = data.frame(TOEFL.Score[-i] + SOP[-i] +
 #output mean of MSE
 mean(msecv)
 ```
-
+--->
 #Trees and Forests
 
-```{r}
+```{r, echo=FALSE}
 admissionsData <- admissionsData[,-1]
 #head(admissionsData)
 dim(admissionsData)
@@ -409,7 +401,7 @@ admissionsTest <- admissionsData[-trainindex, ]
 
 #Chance of Admittance 
 I am going to do a 70/30 split of training and testing data. There are 500 observations, so we will have 350 training observations and 150 testing points. 
-```{r}
+```{r, echo=FALSE}
 
 set.seed(110101010)
 admissionTree <- tree(Chance.of.Admit~., data = admissionsTrain)
@@ -427,7 +419,7 @@ which.min(admissionTreeCV$dev)
 ```
 Cross validation suggest 7 nodes would be best, so we will prune the tree using 7 terminal nodes. 
 
-```{r}
+```{r, echo=FALSE}
 pruneAdmissionTreeCV <- prune.tree(admissionTree, best=7)
 plot(pruneAdmissionTreeCV)
 text(pruneAdmissionTreeCV, pretty = 0)
@@ -437,7 +429,7 @@ summary(pruneAdmissionTreeCV)
 ```
 
 
-```{r}
+```{r, echo=FALSE}
 
 set.seed(1000101010)
 admission.rf <- randomForest(Chance.of.Admit~., data = admissionsTrain, importance = TRUE)
@@ -447,7 +439,7 @@ admission.rf
 Since Random Forest uses out-of-bag which is similar to cross validation so no cross validation was performed. We can look at the importance of the variables.
 
 
-```{r}
+```{r, echo=FALSE}
 varImpPlot(admission.rf)
 ```
 
@@ -456,7 +448,7 @@ As seen from the Importance Plot the most important variables are CGPA, GRE Scor
 
 #Research
 
-```{r}
+```{r, echo=FALSE}
 set.seed(1388582293)
 researchTree <- tree(Research~., data = admissionsTrain)
 plot(researchTree)
@@ -475,14 +467,14 @@ which.min(researchTreeCV$dev)
 
 Cross Validation Suggests 3 terminal nodes would be best.
 
-```{r}
+```{r, echo=FALSE}
 pruneResearchTreeCV <- prune.tree(researchTree, best=3)
 plot(pruneResearchTreeCV)
 text(pruneResearchTreeCV, pretty = 0)
 summary(pruneResearchTreeCV)
 ```
 
-```{r}
+```{r, echo=FALSE}
 set.seed(1413755523)
 research.rf <- randomForest(Research~., data = admissionsTrain, importance = TRUE)
 research.rf
