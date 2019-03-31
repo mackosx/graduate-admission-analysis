@@ -73,8 +73,9 @@ We can now perform analyses on the data to attempt to predict a candidate's Chan
 
 ### Principal Component Analysis
 
+Now that we've determined our response variables of interest using clustering, we can run Principal Component Analysis to further our understanding of our data. 
 
-## With Response Variable Chance.of.Admit
+### With Response Variable Chance.of.Admit
 
 The variable we are interested in predicting, Chance.of.Admit, is the 9th variable.  
 
