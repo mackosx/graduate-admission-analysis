@@ -80,7 +80,7 @@ test <- graduateAdmissions.normalizedNumeric[-ind,]
 
 graduateAdmissions.nnWithTrain <- neuralnet(Research ~ ., data = train, hidden = 5, linear.output = FALSE, stepmax = 1e+06)
 
-table(predict(graduateAdmissions.nnWithTrain, graduateAdmissions.normalizedNumeric, type = "class"), 2, graduateAdmissions.normalizedNumeric$Research)
+table(predict(graduateAdmissions.nnWithTrain, graduateAdmissions.normalizedNumeric, type = "class"), graduateAdmissions.normalizedNumeric$Research)
 
 
 
