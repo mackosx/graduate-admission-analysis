@@ -34,10 +34,10 @@ admissionTreeCV$dev
 admissionTreeCV$size
 which.min(admissionTreeCV$dev)
 ```
-Cross validation suggest 6 nodes would be best, so we will prune the tree using 6 terminal nodes. 
+Cross validation suggest 7 nodes would be best, so we will prune the tree using 7 terminal nodes. 
 
 ```{r}
-pruneAdmissionTreeCV <- prune.tree(admissionTree, best=6)
+pruneAdmissionTreeCV <- prune.tree(admissionTree, best=7)
 plot(pruneAdmissionTreeCV)
 text(pruneAdmissionTreeCV, pretty = 0)
 summary(pruneAdmissionTreeCV)
