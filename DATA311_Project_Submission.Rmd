@@ -271,9 +271,9 @@ msecv <- NA
 coef <-matrix(nrow = 500, ncol=length(linear$coefficients))
 for(i in 1:nrow(admissionsData)){
   #Fit the linear model
-cvlm[[i]] <- lm(Chance.of.Admit[-i] ~ Serial.No.[-i] + GRE.Score[-i] + TOEFL.Score[-i] +LOR[-i] + CGPA[-i] + Research[-i])
+cvlm[[i]] <- lm(Chance.of.Admit[-i] ~ GRE.Score[-i] + TOEFL.Score[-i] +LOR[-i] + CGPA[-i] + Research[-i])
 # Calculate MSE for ith model
-msecv[i] <- (predict(cvlm[[i]], newdata = data.frame(Serial.No.[-i] + GRE.Score[-i] + TOEFL.Score[-i] +LOR[-i] + CGPA[-i] + Research[-i]))-Chance.of.Admit[-i])^2
+msecv[i] <- (predict(cvlm[[i]], newdata = data.frame(GRE.Score[-i] + TOEFL.Score[-i] +LOR[-i] + CGPA[-i] + Research[-i]))-Chance.of.Admit[-i])^2
 #coef[[i]] <- cvlm[[i]]$coefficients
   for(j in 1:length(linear$coefficients)){
     coef[i,j] <- cvlm[[i]]$coefficients[j]
@@ -286,8 +286,8 @@ mean(msecv)
 #The chance of being admitted to univeristy is +/- 6.66%.   
 <!---Check this conclusion. Not certain this is quite right. You also may have missed a - in the msecv command -->
 
-<!--#Bootstrap for linear model - Chance of Admission-->
-```{r, include=FALSE, echo=FALSE, eval=FALSE, warning=FALSE}
+<!--#Bootstrap for linear model - Chance of Admission
+```{r, warning=FALSE}
 newboots <- list()
 bootsmod <- list()
 msebs <- NA
@@ -295,7 +295,7 @@ B <- 5000
 bootcoef <- matrix(nrow = B, ncol=length(linear$coefficients))
 for(i in 1:B){
   newboots[[i]] <- admissionsData[sample(1:nrow(admissionsData), nrow(admissionsData), replace=TRUE),]
-  bootsmod[[i]] <- lm(University.Rating~., data=newboots[[i]])
+  bootsmod[[i]] <- lm(Chance.of.Admit~GRE.Score + TOEFL.Score +LOR + CGPA + Research, data=newboots[[i]])
   for(j in 1:length(linear$coefficients)){
     bootcoef[i,j] <- bootsmod[[i]]$coefficients[j]
   }
@@ -306,32 +306,34 @@ c(sd(bootcoef[,1]),sd(bootcoef[,2]),sd(bootcoef[,3]),sd(bootcoef[,4]),sd(bootcoe
 c(sd(coef[,1]),sd(coef[,2]),sd(coef[,3]),sd(coef[,4]),sd(coef[,5]),sd(coef[,6]),sd(coef[,7])) 
 
 ```
-
+-->
 #Variable Selection for Research 
 
 ```{r, echo=FALSE}
-linear <- lm(Research~ Serial.No. + GRE.Score + TOEFL.Score + University.Rating + SOP +LOR + CGPA, data = admissionsData )
-#summary(linear)
+logmod <- glm(Research~., data=admissionsData)
+summary(logmod)
+#plot(logmod)
 
-#Remove LOR
-linear <- lm(Research~ Serial.No. + GRE.Score + TOEFL.Score + University.Rating  +LOR + CGPA, data = admissionsData )
-summary(linear)
+#Removed LOR
+logmod <- glm(Research~Serial.No. + GRE.Score + TOEFL.Score + University.Rating + SOP + CGPA, data=admissionsData)
+summary(logmod)
+#plot(logmod)
 
-#Remove CGPA
-linear <- lm(Research~ Serial.No. + GRE.Score + TOEFL.Score + University.Rating  +LOR, data = admissionsData )
-summary(linear)
+#Removed LOR, CGPA
+logmod <- glm(Research~Serial.No. + GRE.Score + TOEFL.Score + University.Rating + SOP , data=admissionsData)
+summary(logmod)
 
-#Remove LOR
-linear <- lm(Research~ Serial.No. + GRE.Score + TOEFL.Score + University.Rating, data = admissionsData )
-summary(linear)
+#Removed LOR, CGPA, TOEFL
+logmod <- glm(Research~Serial.No. + GRE.Score  + University.Rating + SOP , data=admissionsData)
+summary(logmod)
 
-#Remove TOEFL
-linear <- lm(Research~ Serial.No. + GRE.Score + University.Rating, data = admissionsData )
-summary(linear)
+#Removed LOR, CGPA, TOEFL, SOP
+logmod <- glm(Research~Serial.No. + GRE.Score  + University.Rating , data=admissionsData)
+summary(logmod)
 
-#Remove Serial Number
-linear <- lm(Research~ + GRE.Score + University.Rating, data = admissionsData )
-summary(linear)
+#Removed LOR, CGPA, TOEFL, SOP, Serial Number
+logmod <- glm(Research~ GRE.Score  + University.Rating , data=admissionsData)
+summary(logmod)
 
 ```
 
@@ -340,16 +342,17 @@ summary(linear)
 set.seed(7861)
 
 cvlm <- list()
-msecv <- NA
+msecvr <- NA
 for(i in 1:nrow(admissionsData)){
   #Fit the linear model
-cvlm[[i]] <- lm(Research[-i] ~ GRE.Score[-i] + University.Rating[-i])
+cvlm[[i]] <- glm(Research[-i] ~ GRE.Score[-i] + University.Rating[-i])
 # Calculate MSE for ith model
-msecv[i] <- (predict(cvlm[[i]], newdata = data.frame(GRE.Score[-i] + University.Rating[-i]))-Research[-i])^2
+msecvr[i] <- (predict(cvlm[[i]], newdata = data.frame(GRE.Score[-i] + University.Rating[-i]))-Research[-i])^2
 #msecv[i]
 }
 #output mean of MSE
-mean(msecv)
+msecvr
+mean(msecvr)
 ```
 
 
