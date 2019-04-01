@@ -244,7 +244,7 @@ vcov(linear) # covariance matrix for model parameters
 influence(linear) # regression diagnostics
 ```
 
-# Variable Selection for Chance of Admittion
+# Variable Selection for Chance of Admission
 
 By performing backwards selection, we will remove the least significant values until all values are significant.
 ```{r, echo=FALSE}
@@ -273,7 +273,7 @@ for(i in 1:nrow(admissionsData)){
   #Fit the linear model
 cvlm[[i]] <- lm(Chance.of.Admit[-i] ~ Serial.No.[-i] + GRE.Score[-i] + TOEFL.Score[-i] +LOR[-i] + CGPA[-i] + Research[-i])
 # Calculate MSE for ith model
-msecv[i] <- (predict(cvlm[[i]], newdata = data.frame(Serial.No.[-i] + GRE.Score[-i] + TOEFL.Score[-i] +LOR[-i] + CGPA[-i] + Research[-i]))-Chance.of.Admit[i])^2
+msecv[i] <- (predict(cvlm[[i]], newdata = data.frame(Serial.No.[-i] + GRE.Score[-i] + TOEFL.Score[-i] +LOR[-i] + CGPA[-i] + Research[-i]))-Chance.of.Admit[-i])^2
 #coef[[i]] <- cvlm[[i]]$coefficients
   for(j in 1:length(linear$coefficients)){
     coef[i,j] <- cvlm[[i]]$coefficients[j]
@@ -345,7 +345,7 @@ for(i in 1:nrow(admissionsData)){
   #Fit the linear model
 cvlm[[i]] <- lm(Research[-i] ~ GRE.Score[-i] + University.Rating[-i])
 # Calculate MSE for ith model
-msecv[i] <- (predict(cvlm[[i]], newdata = data.frame(GRE.Score[-i] + University.Rating[-i]))-Research[i])^2
+msecv[i] <- (predict(cvlm[[i]], newdata = data.frame(GRE.Score[-i] + University.Rating[-i]))-Research[-i])^2
 #msecv[i]
 }
 #output mean of MSE
