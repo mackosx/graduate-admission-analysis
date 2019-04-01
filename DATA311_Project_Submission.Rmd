@@ -338,6 +338,7 @@ summary(logmod)
 ```
 
 #CV for linear model - Research
+
 ```{r,echo=FALSE, warning=FALSE}
 set.seed(7861)
 
@@ -403,7 +404,9 @@ admissionsTest <- admissionsData[-trainindex, ]
 ```
 
 #Chance of Admittance 
+
 I am going to do a 70/30 split of training and testing data. There are 500 observations, so we will have 350 training observations and 150 testing points. 
+
 ```{r, echo=FALSE}
 
 set.seed(110101010)
@@ -420,6 +423,7 @@ admissionTreeCV$dev
 admissionTreeCV$size
 which.min(admissionTreeCV$dev)
 ```
+
 Cross validation suggest 7 nodes would be best, so we will prune the tree using 7 terminal nodes. 
 
 ```{r, echo=FALSE}
