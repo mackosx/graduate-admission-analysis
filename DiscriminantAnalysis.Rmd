@@ -1,3 +1,15 @@
+---
+title: "Discriminant Analysis"
+author: "Mackenzie Salloum"
+date: '2019-03-31'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
 library(MASS)
 library(MLmetrics)
 
@@ -62,26 +74,51 @@ LogLoss(pqda$posterior[,2], graduateAdmissions.catData$Research)
 Accuracy(graduateAdmissions.catData$Research, pqda$class)
 Sensitivity(graduateAdmissions.catData$Research, pqda$class)
 F1_Score(graduateAdmissions.catData$Research, pqda$class)
+```
 
 
+
+We can use a neural network to attempt prediction as well. While this model is more complex so we lose inference, we gain a lot in terms of predictions. We will also remove serial number as a variable.
+```{r}
 # Neural Net
 library(neuralnet)
-graduateAdmissions.numeric <- graduateAdmissions.data[, -c(1)]
+graduateAdmissions.numeric <- graduateAdmissions.data[, -c(1)] # Remove serial number
 graduateAdmissions.normalizedNumeric <- apply(graduateAdmissions.numeric, 2, function(v) (v-min(v)) / (max(v) - min(v)))
 graduateAdmissions.normalizedNumeric <- data.frame(graduateAdmissions.normalizedNumeric)
 graduateAdmissions.normalizedNumeric$Research <- as.factor(graduateAdmissions.normalizedNumeric$Research)
-graduateAdmissions.nnAllData <- neuralnet(Research ~ ., data = graduateAdmissions.normalizedNumeric, hidden = 5, linear.output = FALSE, stepmax = 1e+06)
+```
 
 
+Using a 70/30 ratio for splitting our data into training/testing sets, we can cross-validate to improve model performance estimation.
+```{r}
 # Training/Testing Set
-ind <- sample(1:nrow(graduateAdmissions.normalizedNumeric), 250)
+ind <- sample(1:nrow(graduateAdmissions.normalizedNumeric), 350)
 train <- graduateAdmissions.normalizedNumeric[ind,]
 test <- graduateAdmissions.normalizedNumeric[-ind,]
 
 graduateAdmissions.nnWithTrain <- neuralnet(Research ~ ., data = train, hidden = 5, linear.output = FALSE, stepmax = 1e+06)
 predicted = data.frame(round(predict(graduateAdmissions.nnWithTrain, graduateAdmissions.normalizedNumeric, type = "class"), 0))$X2
-table(predicted, actual = graduateAdmissions.normalizedNumeric$Research)
 
-Sensitivity(graduateAdmissions.normalizedNumeric$Research, predicted)
+table(predicted, actual = graduateAdmissions.normalizedNumeric$Research)
+```
+
+Looking at the accuracy, the neural network is quite good at ~86% prediction rate. To our classes are roughly balanced, but we can look at the sensitivity to get a numerical value that confirms this. Our F1 score is also fairly high at 0.84. Overall, the neural network does a good job of predicting whether or not a student has done research based on the other scores of their application.
+```{r}
 Accuracy(graduateAdmissions.normalizedNumeric$Research, predicted)
+Sensitivity(graduateAdmissions.normalizedNumeric$Research, predicted)
 F1_Score(graduateAdmissions.normalizedNumeric$Research, predicted)
+```
+
+
+```{r}
+graduateAdmissions.nnWithTrainAdmit <- neuralnet(Chance.of.Admit ~ GRE.Score + TOEFL.Score + University.Rating + SOP + LOR + CGPA, data = train, hidden = 5)
+predictedChanceOfAdmit = predict(graduateAdmissions.nnWithTrainAdmit, graduateAdmissions.normalizedNumeric)
+
+sum((predict(graduateAdmissions.nnWithTrainAdmit, data.frame(test)) - test$Chance.of.Admit) ^ 2) / nrow(test)
+```
+Turns out the cross-validated MSE of our neural network is very low. So we can predict with great accuracy a students chance of admission!
+
+
+
+
+
