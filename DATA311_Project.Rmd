@@ -191,7 +191,7 @@ for(i in 1:nrow(test)){
   #Fit the linear model
 cvlm[[i]] <- lm(University.Rating[-i] ~ TOEFL.Score[-i] + SOP[-i] + LOR[-1] + CGPA[-i])
 # Calculate MSE for ith model
-msecv[i] <- (predict(cvlm[[i]], newdata = data.frame(TOEFL.Score[-i] + SOP[-i] + LOR[-1] + CGPA[-i]))-University.Rating[i])^2
+msecv[i] <- (predict(cvlm[[i]], newdata = data.frame(TOEFL.Score[-i] + SOP[-i] + LOR[-i] + CGPA[-i]))-University.Rating[i])^2
 #msecv[i]
 }
 #output mean of MSE

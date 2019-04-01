@@ -28,8 +28,14 @@ linear <- lm(University.Rating ~., data=test)
 #plot(linear)
 
 logmod <- glm(Research~., data=test)
-summary(logmod)
-plot(logmod)
+#summary(logmod)
+#plot(logmod)
+
+chance.vs.CGPA <- lm(test$Chance.of.Admit ~ test$CGPA)
+plot(test$Chance.of.Admit ~ test$CGPA, xlab = "Chance of Admission", ylab = "CGPA", main = "Chance of Admission VS CGPA")
+abline(chance.vs.CGPA , col="red", lwd=3, data = test)
+
+#sum (predict(chance.vs.CGPA, data.frame(test)))
 ```
 
 
@@ -134,7 +140,7 @@ summary(logmod)
 
 #CVs
 
-#CV for linear model - Chance of Admittion
+#CV for linear model - Chance of Admittion - Manual Leave on Out
 ```{r,eval, warning=FALSE}
 set.seed(7861)
 
@@ -151,24 +157,32 @@ msecv[i] <- (predict(cvlm[[i]], newdata = data.frame(Serial.No.[-i] + GRE.Score[
 mean(msecv)
 ```
 
-#CV for linear model - Research
+#CV for linear model - Research 
 ```{r,eval, warning=FALSE}
-set.seed(7861)
+ResearchData <- test$Research
+ResearchDataFactor <- factor(test$Research)
 
-cvlm <- list()
-msecv <- NA
-for(i in 1:nrow(test)){
-  #Fit the linear model
-cvlm[[i]] <- lm(Research[-i] ~ GRE.Score[-i] + University.Rating[-i])
-# Calculate MSE for ith model
-msecv[i] <- (predict(cvlm[[i]], newdata = data.frame(GRE.Score[-i] + University.Rating[-i]))-Research[i])^2
-#msecv[i]
-}
-#output mean of MSE
-mean(msecv)
+simlog<-glm(factor(Research)~., family = "binomial", data = test)
+table(predict(simlog, type = "response")>0.5, ResearchData)
+
+misclassificationRate <- (57+66)/(154+223)
+capture.output(cat('Misclassification rate = ', misclassificationRate))
+
+library(MLmetrics)
+
+F1<- F1_Score(as.numeric(predict(simlog, type = "response")>0.5), ResearchData)
+Accu <- Accuracy(as.numeric(predict(simlog, type = "response")>0.5), ResearchData)
+Sens <- Sensitivity(as.numeric(predict(simlog, type = "response")>0.5), ResearchData)
+
+scoreTable <-cbind(F1, Accu, Sens)
+colnames(scoreTable)<-c("F1 Score", "Accuracy", "Sensitivity")
+rownames(scoreTable)<-c("Logistic Regression")
+#rownames(scoreTable)<-c("Logistic Regression", "Neural Network")
+round(scoreTable,3)
+
 ```
 
-#CV for linear model - University Rating
+#CV for linear model - University Rating - Manual Leave on Out
 ```{r,eval, warning=FALSE}
 set.seed(7861)
 
