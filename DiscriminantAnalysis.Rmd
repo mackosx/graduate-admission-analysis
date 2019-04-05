@@ -1,0 +1,152 @@
+---
+title: "Discriminant Analysis"
+author: "Mackenzie Salloum"
+date: '2019-03-31'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r Discriminant Analysis}
+library(MASS)
+library(MLmetrics)
+
+# Setup data
+graduateAdmissions.csv <- read.csv("Admission_Predict_Ver1.1.csv")
+graduateAdmissions.data <- data.frame(graduateAdmissions.csv)
+graduateAdmissions.catData <- graduateAdmissions.data[, -c(1)]
+graduateAdmissions.catData$Chance.of.Admit <- factor(graduateAdmissions.data$Chance.of.Admit > 0.5)
+
+ind <- sample(1:nrow(graduateAdmissions.catData), 350)
+train <- graduateAdmissions.catData[ind,]
+test <- graduateAdmissions.catData[-ind,]
+
+# Predict Chance of Admit
+graduateAdmission.lda <- lda(Chance.of.Admit ~ ., data = train, cv = TRUE)
+# Perform LDA
+plda <- predict(graduateAdmission.lda, test)
+
+# Classification Table
+table(test$Chance.of.Admit, plda$class)
+# Classification Metrics
+LogLoss(plda$posterior[,2], as.numeric(test$Chance.of.Admit) - 1)
+Accuracy(test$Chance.of.Admit, plda$class)
+Sensitivity(test$Chance.of.Admit, plda$class)
+
+# Perform QDA on Chance of admission
+graduateAdmission.qda <- qda(Chance.of.Admit ~ ., data = train, cv = TRUE)
+
+# Run predictions
+pqda <- predict(graduateAdmission.qda, test)
+# Classification table for chance of admission
+table(test$Chance.of.Admit, pqda$class )
+
+# Metrics
+LogLoss(pqda$posterior[,2], as.numeric(test$Chance.of.Admit) - 1)
+Accuracy(test$Chance.of.Admit, pqda$class)
+Sensitivity(test$Chance.of.Admit, pqda$class)
+F1_Score(test$Chance.of.Admit, pqda$class)
+
+
+
+# Predict Research
+
+# Perform LDA on Research
+graduateAdmission.lda <- lda(Research ~ ., data = train, cv = TRUE)
+plda <- predict(graduateAdmission.lda, test)
+
+# Classificationtablee
+table(test$Research,plda$class)
+# Metrics
+LogLoss(plda$posterior[,2], test$Research)
+Accuracy(test$Research,plda$class)
+Sensitivity(test$Research,plda$class)
+
+# Perform QDA on research
+graduateAdmission.qda <- qda(Research ~ ., data = train, cv = TRUE)
+
+# Predicr research with QDA
+pqda <- predict(graduateAdmission.qda, test)
+
+# Class table
+table(test$Research, pqda$class)
+# Metrics
+LogLoss(pqda$posterior[,2], test$Research)
+Accuracy(test$Research, pqda$class)
+Sensitivity(test$Research, pqda$class)
+F1_Score(test$Research, pqda$class)
+```
+
+
+
+We can use a neural network to attempt prediction as well. While this model is more complex so we lose inference, we gain a lot in terms of predictions. We will also remove serial number as a variable.
+```{r Set up data for NN}
+set.seed(420)
+# Neural Net
+library(neuralnet)
+graduateAdmissions.numeric <- graduateAdmissions.data[, -c(1)] # Remove serial number
+graduateAdmissions.normalizedNumeric <- apply(graduateAdmissions.numeric, 2, function(v) (v-min(v)) / (max(v) - min(v)))
+graduateAdmissions.normalizedNumeric <- data.frame(graduateAdmissions.normalizedNumeric)
+graduateAdmissions.normalizedNumeric$Research <- as.factor(graduateAdmissions.normalizedNumeric$Research)
+```
+
+
+Using a 70/30 ratio for splitting our data into training/testing sets, we can cross-validate to improve model performance estimation.
+```{r Train/Test Set}
+# Training/Testing Set
+ind <- sample(1:nrow(graduateAdmissions.normalizedNumeric), 350)
+train <- graduateAdmissions.normalizedNumeric[ind,]
+test <- graduateAdmissions.normalizedNumeric[-ind,]
+
+graduateAdmissions.nnWithTrain <- neuralnet(Research ~ ., data = train, hidden = 5, linear.output = FALSE, stepmax = 1e+05)
+predicted = data.frame(round(predict(graduateAdmissions.nnWithTrain, test, type = "class"), 0))$X2
+
+table(predicted, actual = test$Research)
+plot(graduateAdmissions.numeric, col = predicted + 1)
+```
+
+```{r Scores for Research}
+researchAccuracy <- Accuracy(test$Research, predicted)
+researchSensitivity <- Sensitivity(test$Research, predicted)
+researchF1 <- F1_Score(test$Research, predicted)
+```
+
+
+```{r MSE for Chance of Admit}
+graduateAdmissions.nnWithTrainAdmit <- neuralnet(Chance.of.Admit ~ GRE.Score + TOEFL.Score + University.Rating + SOP + LOR + CGPA, data = train, hidden = 5)
+predictedChanceOfAdmit = predict(graduateAdmissions.nnWithTrainAdmit, test)
+plot(graduateAdmissions.nnWithTrainAdmit)
+
+graduateAdmissions.nnWithTrainAdmit.MSE <- sum((predict(graduateAdmissions.nnWithTrainAdmit, data.frame(test)) - test$Chance.of.Admit) ^ 2) / nrow(test)
+```
+Turns out the cross-validated MSE of the neural network is very low. So we can predict with great accuracy how a student feels about their particular Grad application.
+
+```{r Summary}
+scoreTable <- cbind( (41) / 150, researchF1, researchSensitivity)
+colnames(scoreTable)<-c("Misclass", "F1 Score", "Sensitivity")
+rownames(scoreTable)<-c("Neural Network (5)")
+round(scoreTable,3)
+
+
+yHat <- predict(graduateAdmissions.nnWithTrainAdmit, test)
+yMax <- max(graduateAdmissions.data$Chance.of.Admit)
+yMin <- min(graduateAdmissions.data$Chance.of.Admit)
+
+yHatDenormalzed <- yHat * (yMax - yMin) + yMin
+yDenormalized <- graduateAdmissions.data$Chance.of.Admit[-ind]
+
+avgDiff <- sum(abs(yHatDenormalzed - yDenormalized)) / length(yDenormalized)
+
+
+scoreTable <- cbind( graduateAdmissions.nnWithTrainAdmit.MSE, avgDiff)
+colnames(scoreTable)<-c("MSE", "Avg difference")
+rownames(scoreTable)<-c("Neural Network (5)")
+round(scoreTable,5)
+```
+
+
+
+
+
