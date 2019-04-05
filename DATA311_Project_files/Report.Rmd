@@ -1,0 +1,134 @@
+---
+title: "DATA311 Project"
+author: "Parsa Rajabi, Chelsey Hvingelby, Mackenzie Salloum, Cameron Chong, Jeff Bulmer"
+date: '2019-04-04'
+output: pdf_document
+---
+
+The following libraries are required in order to run the markdown script properly. They can be installed from the CRAN repositories. 
+```{r}
+#install.packages("FNN")
+#install.packages("mvtnorm")
+#install.packages("mclust")
+#install.packages("cluster")
+#install.packages("tree")
+#install.packages("randomForest")
+#install.packages("fpc")
+#install.packages("boot")
+#install.packages("MASS")
+library(FNN)
+library(mvtnorm)
+library(mclust)
+library(cluster)
+library(fpc)
+library(boot)
+library(tree)
+library(MASS)
+library(randomForest)
+```
+The data in question is 500 observations of graduate admission students for Universities in India. It consists of categorical and continuous variables. 
+
+The dataset being explored in this report consists of graduate admissions data for students in India.  Data was collected from 500 prospective graduate students, including various scores achieved in the Test of English as a First Language (TOEFL.Score) Graduate Record Examinations (GRE.Score), and scores indicating the strength of each candidates Statement of Purpose (SOP) and Letter of Recommendation (LOR). Other attributes include Undergraduate Cumulative GPA (CGPA), a unique identifier (Serial.No.), and whether or not the prospective student had Research Experience (Research). Finally, each candidate was polled about their confidence of being accepted into graduate school (Chance.of.Admit).
+
+
+The data must be attached in order to run the analysis. As long as the file is in the same directory as the Rmd file it will run.
+```{r, echo=FALSE}
+admissionsData <- read.csv("Admission_Predict_Ver1.1.csv")
+attach(admissionsData)
+```
+
+## Clustering
+
+We begin by computing the respective pairwise distances in our data, and plotting the output.
+
+```{r, echo=FALSE}
+dg<-daisy(admissionsData[,-1], metric="gower")
+pdist <- cmdscale(d=dg)
+plot(pdist)
+```
+
+We quickly see that two clear groups appear. We can isolate these two groups using hierarchical clustering with single-linkage chaining. 
+
+```{r, , echo=FALSE, eval=FALSE}
+set.seed(413)
+km <- kmeans(pdist, centers = 2)
+#plotcluster(pdist, km$cluster)
+```
+
+```{r, echo=FALSE}
+hms <- hclust(na.omit(dg), method="single")
+#plot(hms)
+plot(pdist, col=cutree(hms,2))
+#plot(pdist)
+```
+
+We can then use scatterplots to show the entirety of the data, while still keeping the groups intact, to see if we can determine which predictors most affect these clusters.
+
+
+```{r, echo=FALSE}
+pairs(admissionsData[,-1], col=cutree(hms,2))
+```
+
+We notice that, using the single linkage chaining from above, we can predict whether or not a student performs research almost perfectly.
+
+So, by applying Gower's Distance on all predictors and using single-linkage chaining, we have two clear clusters directly coinciding with the presence of a research variable. This tells us that we should use Research as a response variable in models, in addition to Chance of Admit.
+
+We can now perform analyses on the data to attempt to predict a candidate's Chance of Admission, as well as the presence of Research Experience.
+
+
+##Linear Models
+
+PARSAS CODE GOES HERE
+
+
+##Bootstrap
+
+
+JEFFS CODE HERE
+
+
+##Trees
+
+We will apply 70/30 split of training and testing data. There are 500 observations, so we will have 350 training observations and 150 testing points. 
+
+```{r}
+admissionsTreeData <- admissionsData[,-1]
+trainindex <- sample(1:nrow(admissionsTreeData), 350)
+admissionsTrain <- admissionsTreeData[trainindex, ]
+admissionsTest <- admissionsTreeData[-trainindex, ]
+```
+
+#Research  Tree
+
+#Cross Validation
+
+```{r}
+set.seed(1232343124)
+researchTree <- tree(as.factor(Research)~., data = admissionsTrain)
+plot(researchTree)
+text(researchTree, pretty=0)
+
+
+researchTreeCV <- cv.tree(researchTree, FUN = prune.tree, K = 5)
+plot(researchTreeCV, type = "b")
+which.min(researchTreeCV$dev)
+researchTreeCV$dev
+
+
+researchTreeCV$dev
+researchTreeCV$size
+which.min(researchTreeCV$dev)
+```
+Cross Validation Suggests 3 terminal nodes would be best. So we will prune our tree to 3 terminal nodes
+
+```{r}
+pruneResearchTreeCV <- prune.tree(researchTree, best=3)
+plot(pruneResearchTreeCV)
+text(pruneResearchTreeCV, pretty = 0)
+summary(pruneResearchTreeCV)
+```
+
+
+##Random Forest
+
+
