@@ -10,8 +10,13 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ```{r Discriminant Analysis}
+install.packages("MASS")
+install.packages("MLmetrics")
+install.packages("neuralnet")
 library(MASS)
 library(MLmetrics)
+library(neuralnet)
+
 
 # Setup data
 graduateAdmissions.csv <- read.csv("Admission_Predict_Ver1.1.csv")
@@ -85,7 +90,6 @@ We can use a neural network to attempt prediction as well. While this model is m
 ```{r Set up data for NN}
 set.seed(420)
 # Neural Net
-library(neuralnet)
 graduateAdmissions.numeric <- graduateAdmissions.data[, -c(1)] # Remove serial number
 graduateAdmissions.normalizedNumeric <- apply(graduateAdmissions.numeric, 2, function(v) (v-min(v)) / (max(v) - min(v)))
 graduateAdmissions.normalizedNumeric <- data.frame(graduateAdmissions.normalizedNumeric)
