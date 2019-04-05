@@ -7,16 +7,16 @@ output: pdf_document
 
 The following libraries are required in order to run the markdown script properly. They can be installed from the CRAN repositories. 
 ```{r}
-install.packages("FNN")
-install.packages("mvtnorm")
-install.packages("mclust")
-install.packages("cluster")
-install.packages("tree")
-install.packages("randomForest")
-install.packages("fpc")
-install.packages("boot")
-install.packages("MASS")
-install.packages("MLMetrics")
+#install.packages("FNN")
+#install.packages("mvtnorm")
+#install.packages("mclust")
+#install.packages("cluster")
+#install.packages("tree")
+#install.packages("randomForest")
+#install.packages("fpc")
+#install.packages("boot")
+#install.packages("MASS")
+#install.packages("MLMetrics")
 library(FNN)
 library(mvtnorm)
 library(mclust)
@@ -81,8 +81,256 @@ We can now perform analyses on the data to attempt to predict a candidate's Chan
 
 ##Linear Models
 
-PARSAS CODE GOES HERE
+```{r}
+admissionsData <- read.csv("Admission_Predict_Ver1.1.csv")
+summary (admissionsData)
+head(admissionsData)
+attach(admissionsData)
 
+#Linear Regression and some plots
+
+#Here's a linear model (Chance of Admit)
+linear <- lm(Chance.of.Admit ~., data=admissionsData)
+summary(linear)
+plot(linear)
+
+#Here's a linear model (University Rating)
+linear <- lm(University.Rating ~., data=admissionsData)
+summary(linear)
+plot(linear)
+
+logmod <- glm(Research~., data=admissionsData)
+summary(logmod)
+plot(logmod)
+
+```
+
+
+#Variable Selection for Chance of Admission
+By performing backwards selection, we will remove the least significant values until all values are significant.
+```{r}
+linear <- lm(Chance.of.Admit~ ., data = admissionsData )
+
+#Remove University Ranking because it has the highest non significant p value
+linear <- lm(Chance.of.Admit~ GRE.Score + TOEFL.Score + SOP +LOR + CGPA + Research , data = admissionsData )
+#summary(linear)
+
+
+#Remove SOP has the second highest non significant p value
+linear <- lm(Chance.of.Admit~ GRE.Score + TOEFL.Score +LOR + CGPA + Research , data = admissionsData )
+#All variables are now significant
+summary(linear)
+plot(linear)
+```
+
+
+
+#Variable Selection for Research 
+```{r}
+linear <- lm(Research~ Serial.No. + GRE.Score + TOEFL.Score + University.Rating + SOP +LOR + CGPA, data = admissionsData )
+#summary(linear)
+
+#Remove SOP
+linear <- lm(Research~ Serial.No. + GRE.Score + TOEFL.Score + University.Rating  +LOR + CGPA, data = admissionsData )
+#summary(linear)
+
+#Remove SOP, CGPA
+linear <- lm(Research~ Serial.No. + GRE.Score + TOEFL.Score + University.Rating  +LOR, data = admissionsData )
+#summary(linear)
+
+#Remove SOP, CGPA, LOR
+linear <- lm(Research~ Serial.No. + GRE.Score + TOEFL.Score + University.Rating, data = admissionsData )
+#summary(linear)
+
+#Remove SOP, CGPA, LOR, TOEFL
+linear <- lm(Research~ Serial.No. + GRE.Score + University.Rating, data = admissionsData )
+#summary(linear)
+
+#Remove SOP, CGPA, LOR, TOEFL, Serial Number
+linear <- lm(Research~ + GRE.Score + University.Rating, data = admissionsData )
+summary(linear)
+plot(linear)
+
+```
+
+#Variable Selection for University Ranking
+```{r}
+linear <- lm(University.Rating~ Serial.No. + GRE.Score + TOEFL.Score + SOP +LOR + CGPA + Research, data = admissionsData )
+summary(linear)
+
+#Remove Serial Number
+linear <- lm(University.Rating~  GRE.Score + TOEFL.Score + SOP +LOR + CGPA + Research, data = admissionsData )
+summary(linear)
+
+#Remove GRE
+linear <- lm(University.Rating~   TOEFL.Score + SOP +LOR + CGPA + Research, data = admissionsData )
+summary(linear)
+
+#Remove Research
+linear <- lm(University.Rating~   TOEFL.Score + SOP +LOR + CGPA, data = admissionsData )
+summary(linear)
+```
+
+#LogMod Backwards Selection for Research since it's a binary variable:
+```{r}
+logmod <- glm(Research~., data=admissionsData)
+summary(logmod)
+plot(logmod)
+
+#Removed LOR
+logmod <- glm(Research~Serial.No. + GRE.Score + TOEFL.Score + University.Rating + SOP + CGPA, data=admissionsData)
+summary(logmod)
+#plot(logmod)
+
+#Removed LOR, CGPA
+logmod <- glm(Research~Serial.No. + GRE.Score + TOEFL.Score + University.Rating + SOP , data=admissionsData)
+summary(logmod)
+
+#Removed LOR, CGPA, TOEFL
+logmod <- glm(Research~Serial.No. + GRE.Score  + University.Rating + SOP , data=admissionsData)
+summary(logmod)
+
+#Removed LOR, CGPA, TOEFL, SOP
+logmod <- glm(Research~Serial.No. + GRE.Score  + University.Rating , data=admissionsData)
+summary(logmod)
+
+#Removed LOR, CGPA, TOEFL, SOP, Serial Number
+logmod <- glm(Research~ GRE.Score  + University.Rating , data=admissionsData)
+summary(logmod)
+#plot(logmod)
+```
+#based on the logMod summary, the 2 most signifant variables are University Rating and GRE.Score. 
+
+
+
+#CVs
+
+#CV for linear model - Chance of Admission - Manual Leave on Out
+```{r, warning=FALSE}
+set.seed(7861)
+
+cvlm <- list()
+msecv <- NA
+for(i in 1:nrow(admissionsData)){
+  #Fit the linear model
+cvlm[[i]] <- lm(Chance.of.Admit[-i] ~ GRE.Score[-i] + TOEFL.Score[-i] +LOR[-i] + CGPA[-i] + Research[-i])
+# Calculate MSE for ith model
+msecv[i] <- (predict(cvlm[[i]], newdata = data.frame( GRE.Score[-i] + TOEFL.Score[-i] +LOR[-i] + CGPA[-i] + Research[-i]))-Chance.of.Admit[i])^2
+#msecv[i]
+}
+#output mean of MSE
+mean(msecv)
+```
+
+#CV for linear model - Chance of Admission vs CGPA
+```{r, warning=FALSE}
+set.seed(7861)
+
+cvlm <- list()
+msecv <- NA
+for(i in 1:nrow(admissionsData)){
+  #Fit the linear model
+cvlm[[i]] <- lm(Chance.of.Admit[-i] ~  CGPA[-i])
+# Calculate MSE for ith model
+msecv[i] <- (predict(cvlm[[i]], newdata = data.frame(CGPA[-i]))-Chance.of.Admit[i])^2
+#msecv[i]
+}
+#output mean of MSE
+mean(msecv)
+```
+
+#Missclassification Rate - Research 
+```{r, warning=FALSE}
+ResearchData <- admissionsData$Research
+ResearchDataFactor <- factor(admissionsData$Research)
+
+simlog<-glm(factor(Research)~., family = "binomial", data = admissionsData)
+table(predict(simlog, type = "response")>0.5, ResearchData)
+
+misclassificationRate <- (57+66)/(154+223)
+capture.output(cat('Misclassification rate = ', misclassificationRate))
+
+library(MLmetrics)
+
+F1<- F1_Score(as.numeric(predict(simlog, type = "response")>0.5), ResearchData)
+Accu <- Accuracy(as.numeric(predict(simlog, type = "response")>0.5), ResearchData)
+Sens <- Sensitivity(as.numeric(predict(simlog, type = "response")>0.5), ResearchData)
+
+scoreTable <-cbind(F1, Accu, Sens, misclassificationRate)
+colnames(scoreTable)<-c("F1 Score", "Accuracy", "Sensitivity", "Misclassification")
+rownames(scoreTable)<-c("Logistic Regression")
+#rownames(scoreTable)<-c("Logistic Regression", "Neural Network")
+round(scoreTable,3)
+
+```
+
+#CV for linear model - University Rating - Manual Leave One Out
+```{r, warning=FALSE}
+set.seed(7861)
+
+cvlm <- list()
+msecv <- NA
+for(i in 1:nrow(admissionsData)){
+  #Fit the linear model
+cvlm[[i]] <- lm(University.Rating[-i] ~ TOEFL.Score[-i] + SOP[-i] + LOR[-1] + CGPA[-i])
+# Calculate MSE for ith model
+msecv[i] <- (predict(cvlm[[i]], newdata = data.frame(TOEFL.Score[-i] + SOP[-i] + LOR[-1] + CGPA[-i]))-University.Rating[i])^2
+#msecv[i]
+}
+#output mean of MSE
+mean(msecv)
+```
+
+# Bootstrap for Linear Model - Chance of Admission
+```{r, warning=FALSE}
+newboots <- list()
+bootsmod <- list()
+B <- 10000
+bootcoef <- matrix(nrow = B, ncol=length(linear$coefficients))
+for(i in 1:B){
+  newboots[[i]] <- admissionsData[sample(1:nrow(admissionsData), nrow(admissionsData), replace=TRUE),]
+  bootsmod[[i]] <- lm(Chance.of.Admit~GRE.Score + TOEFL.Score +LOR + CGPA + Research, data=newboots[[i]])
+  for(j in 1:length(linear$coefficients)){
+    bootcoef[i,j] <- bootsmod[[i]]$coefficients[j]
+  }
+}
+
+jk <- function(vec) {
+  sqrt((length(admissionsData)-1)/(length(admissionsData))*sum((vec-mean(vec))^2))
+}
+
+#Standard Deviation from linear model coefficients
+summary(linear)$coefficients[,2]
+#Standard Deviation from non-parametric bootstrap on linear model coefficients
+c(sd(bootcoef[,1]),sd(bootcoef[,2]),sd(bootcoef[,3]),sd(bootcoef[,4]),sd(bootcoef[,5]))
+
+#Final Coefficients for bootstrapped linear model. 
+c(mean(bootcoef[,1]),mean(bootcoef[,2]),mean(bootcoef[,3]),mean(bootcoef[,4]),mean(bootcoef[,5]))
+```
+
+
+
+#Bootstrap for Logistic Regression
+
+```{r, warning=FALSE}
+newboots <- list()
+bootsmod <- list()
+bootcoef <- matrix(nrow = B, ncol=length(linear$coefficients))
+for(i in 1:B){
+  newboots[[i]] <- admissionsData[sample(1:nrow(admissionsData), nrow(admissionsData), replace=TRUE),]
+  bootsmod[[i]] <- glm(Research~GRE.Score+University.Rating, data=newboots[[i]])
+  for(j in 1:length(linear$coefficients)){
+    bootcoef[i,j] <- bootsmod[[i]]$coefficients[j]
+  }
+}
+
+#Standard Error on coefficients of one logistic regression
+summary(logmod)$coefficients[,2]
+#Standard Error on coefficients after applying non-parametric bootstrap
+c(sd(bootcoef[,1]),sd(bootcoef[,2]),sd(bootcoef[,3]))
+#Final coefficients for bootstrapped logistic regression
+c(mean(bootcoef[,1]),mean(bootcoef[,2]),mean(bootcoef[,3]))
+```
 
 ##Bootstrap
 
