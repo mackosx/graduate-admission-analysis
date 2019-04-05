@@ -163,9 +163,51 @@ set.seed(574847)
 clusts <- hclust(dist(pca.admin$x[,1:2]), method="average")
 plot(clusts)
 plot(pca.admin$x[,1:2], col=cutree(clusts,2))
+pairs(admissionsData[,-c(1,9)], col=cutree(clusts,2))
 ```
 
-These are not quiet the groups we noticed by eye.  
+These are not quiet the groups we noticed by eye.  Let's try clustering with a mixture model.  
+
+```{r, eval=FALSE}
+#install.packages("mclust")
+#install.packages("teigen")
+library(mclust)
+library(teigen)
+
+mPCA <- Mclust(dist(pca.admin$x[,1:2]), G=1:5, scale = TRUE)
+summary(mPCA)
+
+mPCA2 <- Mclust(dist(pca.admin$x[,1:2]), G = 2)
+summary(mPCA2)
+plot(mPCA2)
+
+plot(pca.admin$x[,1:2], col=mPCA2$classification)
+
+
+set.seed(2521)
+tfaith <- teigen(as.matrix(dist(pca.admin$x[,1:2])), models = "CCCC", Gs = 1:4, verbose = FALSE)
+plot(tfaith, what = "uncertainty", cex = 1.5, uncmult = 1.5)
+plot(tfaith, what = "contour")
+plot(tfaith, ymarg = NULL, lwd = 2)
+
+tPCA <- teigen(as.matrix(dist(pca.admin$x[,1:2])), Gs=1:9, models="all", scale= FALSE, verbose = TRUE, convstyle = "lop")
+plot(tPCA, what = "uncertainty")
+plot(tPCA, what = "contour")
+
+
+tfaith <- teigen(faithful, Gs=1:5, model="UUUU", scale=FALSE, verbose = FALSE)
+plot(tfaith, what="uncertainty")
+plot(tfaith, what="contour")
+library(gclus)
+data(wine)
+twine <- teigen(wine[,-1], Gs=1:5, model="UCCU", scale=FALSE, verbose=FALSE)
+plot(twine, xmarg=1, ymarg=7, what="contour")
+plot(twine, xmarg=1, ymarg=10, what="uncertainty")
+table(wine[,1], twine$classification)
+plot(twine$allbic, type="l")
+points(twine$allbic)
+```
+
 
 
 
