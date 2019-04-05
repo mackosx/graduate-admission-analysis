@@ -1,0 +1,4 @@
+"0","linear.full <- lm(Chance.of.Admit ~., data=test)"
+"0","linear.null <- lm(Chance.of.Admit ~ 1, data=test)"
+"0","linear.rank.full <- lm(University.Rating ~., data=test)"
+"0","linear.null.full <- lm(University.Rating ~ 1, data=test)"

@@ -1,0 +1,6 @@
+"0","olymean <- function(x){"
+"0","  ##sort function will sort from min to max "
+"0","  ##-c removes from the concatenated vector "
+"0","  trimmed_x <- sort(x)[-c(1, length(x))]"
+"0","  mean(trimmed_x)"
+"0","}"

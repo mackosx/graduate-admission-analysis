@@ -1,0 +1,8 @@
+"0","for(i in 1:100){"
+"0","  x <- runif(30, 0,3)"
+"0","  y <- -2*x+8 + rnorm(length(x))"
+"0","  if(i==1) plot(x,y,type=""n"")"
+"0","  abline(a=8, b=-2, lwd=3)"
+"0","  simlm <- lm(y~x)"
+"0","  abline(simlm, col=""red"")"
+"0","}"

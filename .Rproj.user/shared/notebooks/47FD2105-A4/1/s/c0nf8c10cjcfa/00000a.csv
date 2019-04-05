@@ -1,0 +1,6 @@
+"0","#head(animals)"
+"0","set.seed(413)"
+"0","#kAnimals<-kmeans(dAnimals, 3)"
+"0","#plot(dAnimals, col = kAnimals$cluster) #points(kAnimals$centers, col = 1:3, pch=8, cex=2)"
+"0","kAnimals2<-kmeans(animalsDist, 3) "
+"0","plot(animalsDist, col = kAnimals2$cluster) "

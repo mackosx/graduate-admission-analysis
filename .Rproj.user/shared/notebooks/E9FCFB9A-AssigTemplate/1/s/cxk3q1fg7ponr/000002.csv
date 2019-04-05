@@ -1,0 +1,2 @@
+"0","fitted_equation <- ""y= -0.0073*x + (5.4358)"""
+"0","plot(price ~ quality, main =fitted_equation)"

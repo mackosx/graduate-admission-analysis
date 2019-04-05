@@ -1,0 +1,2 @@
+"0","animalsDist<-cmdscale(dAnimals) "
+"0","plot(animalsDist, type = ""n"")"
