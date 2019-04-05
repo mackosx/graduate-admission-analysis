@@ -7,15 +7,16 @@ output: pdf_document
 
 The following libraries are required in order to run the markdown script properly. They can be installed from the CRAN repositories. 
 ```{r}
-#install.packages("FNN")
-#install.packages("mvtnorm")
-#install.packages("mclust")
-#install.packages("cluster")
-#install.packages("tree")
-#install.packages("randomForest")
-#install.packages("fpc")
-#install.packages("boot")
-#install.packages("MASS")
+install.packages("FNN")
+install.packages("mvtnorm")
+install.packages("mclust")
+install.packages("cluster")
+install.packages("tree")
+install.packages("randomForest")
+install.packages("fpc")
+install.packages("boot")
+install.packages("MASS")
+install.packages("MLMetrics")
 library(FNN)
 library(mvtnorm)
 library(mclust)
@@ -26,6 +27,7 @@ library(tree)
 library(MASS)
 library(randomForest)
 library(neuralnet)
+library(MLmetrics)
 ```
 The data in question is 500 observations of graduate admission students for Universities in India. It consists of categorical and continuous variables. 
 
@@ -185,7 +187,7 @@ We can use a neural network to attempt prediction as well. While this model is m
 set.seed(420)
 # Neural Net
 
-graduateAdmissions.numeric <- graduateAdmissions.data[, -c(1)] # Remove serial number
+graduateAdmissions.numeric <- admissionsData[, -c(1)] # Remove serial number
 graduateAdmissions.normalizedNumeric <- apply(graduateAdmissions.numeric, 2, function(v) (v-min(v)) / (max(v) - min(v)))
 graduateAdmissions.normalizedNumeric <- data.frame(graduateAdmissions.normalizedNumeric)
 graduateAdmissions.normalizedNumeric$Research <- as.factor(graduateAdmissions.normalizedNumeric$Research)
@@ -230,11 +232,11 @@ round(scoreTable,3)
 
 
 yHat <- predict(graduateAdmissions.nnWithTrainAdmit, test)
-yMax <- max(graduateAdmissions.data$Chance.of.Admit)
-yMin <- min(graduateAdmissions.data$Chance.of.Admit)
+yMax <- max(admissionsData$Chance.of.Admit)
+yMin <- min(admissionsData$Chance.of.Admit)
 
 yHatDenormalzed <- yHat * (yMax - yMin) + yMin
-yDenormalized <- graduateAdmissions.data$Chance.of.Admit[-ind]
+yDenormalized <- admissionsData$Chance.of.Admit[-ind]
 
 avgDiff <- sum(abs(yHatDenormalzed - yDenormalized)) / length(yDenormalized)
 
@@ -431,9 +433,9 @@ Discriminant analysis proved to not be a very fitting model as the boundary is n
 
 ```{r}
 graduateAdmissions.csv <- read.csv("Admission_Predict_Ver1.1.csv")
-graduateAdmissions.data <- data.frame(graduateAdmissions.csv)
-graduateAdmissions.catData <- graduateAdmissions.data[, -c(1)]
-graduateAdmissions.catData$Chance.of.Admit <- factor(graduateAdmissions.data$Chance.of.Admit > 0.5)
+admissionsData <- data.frame(graduateAdmissions.csv)
+graduateAdmissions.catData <- admissionsData[, -c(1)]
+graduateAdmissions.catData$Chance.of.Admit <- factor(admissionsData$Chance.of.Admit > 0.5)
 ind <- sample(1:nrow(graduateAdmissions.catData), 350)
 train <- graduateAdmissions.catData[ind,]
 test <- graduateAdmissions.catData[-ind,]
