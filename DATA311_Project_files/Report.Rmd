@@ -25,6 +25,7 @@ library(boot)
 library(tree)
 library(MASS)
 library(randomForest)
+library(neuralnet)
 ```
 The data in question is 500 observations of graduate admission students for Universities in India. It consists of categorical and continuous variables. 
 
@@ -87,7 +88,7 @@ PARSAS CODE GOES HERE
 JEFFS CODE HERE
 
 
-##Trees
+##Trees and Random Forest
 
 We will apply 70/30 split of training and testing data. There are 500 observations, so we will have 350 training observations and 150 testing points. 
 
@@ -129,6 +130,368 @@ summary(pruneResearchTreeCV)
 ```
 
 
-##Random Forest
+##Chance of Admissions Random Tree
+ 
+```{r}
+set.seed(110101010)
+admissionTree <- tree(Chance.of.Admit~., data = admissionsTrain)
+plot(admissionTree)
+text(admissionTree, pretty=0)
+
+
+admissionTreeCV <- cv.tree(admissionTree, FUN = prune.tree, K = 10)
+plot(admissionTreeCV, type = "b")
+admissionTreeCV
+
+admissionTreeCV$dev
+admissionTreeCV$size
+which.min(admissionTreeCV$dev)
+```
+
+Cross validation suggest 7 nodes would be best, so we will prune the tree using 7 terminal nodes. 
+
+```{r}
+pruneAdmissionTreeCV <- prune.tree(admissionTree, best=7)
+plot(pruneAdmissionTreeCV)
+text(pruneAdmissionTreeCV, pretty = 0)
+summary(pruneAdmissionTreeCV)
+
+
+```
+
+
+#Chance of Admittance Random Forest
+
+```{r}
+set.seed(1000101010)
+admission.rf <- randomForest(Chance.of.Admit~., data = admissionsTrain, importance = TRUE)
+admission.rf
+```
+
+
+Since Random Forest uses out-of-bag which is similar to cross validation so no cross validation was performed. We can look at the importance of the variables.
+```{r}
+varImpPlot(admission.rf)
+```
+
+As seen from the Importance Plot the most important variables are CGPA, GRE Score and TOEFL scores when using chance of admission as a response variable. 
+
+
+##Neural Network
+
+
+We can use a neural network to attempt prediction as well. While this model is more complex so we lose inference, we gain a lot in terms of predictions. We will also remove serial number as a variable.
+```{r Set up data for NN}
+set.seed(420)
+# Neural Net
+
+graduateAdmissions.numeric <- graduateAdmissions.data[, -c(1)] # Remove serial number
+graduateAdmissions.normalizedNumeric <- apply(graduateAdmissions.numeric, 2, function(v) (v-min(v)) / (max(v) - min(v)))
+graduateAdmissions.normalizedNumeric <- data.frame(graduateAdmissions.normalizedNumeric)
+graduateAdmissions.normalizedNumeric$Research <- as.factor(graduateAdmissions.normalizedNumeric$Research)
+```
+
+
+Using a 70/30 ratio for splitting our data into training/testing sets, we can cross-validate to improve model performance estimation.
+```{r Train/Test Set}
+# Training/Testing Set
+ind <- sample(1:nrow(graduateAdmissions.normalizedNumeric), 350)
+train <- graduateAdmissions.normalizedNumeric[ind,]
+test <- graduateAdmissions.normalizedNumeric[-ind,]
+
+graduateAdmissions.nnWithTrain <- neuralnet(Research ~ ., data = train, hidden = 5, linear.output = FALSE, stepmax = 1e+05)
+predicted = data.frame(round(predict(graduateAdmissions.nnWithTrain, test, type = "class"), 0))$X2
+
+table(predicted, actual = test$Research)
+plot(graduateAdmissions.numeric, col = predicted + 1)
+```
+
+```{r Scores for Research}
+researchAccuracy <- Accuracy(test$Research, predicted)
+researchSensitivity <- Sensitivity(test$Research, predicted)
+researchF1 <- F1_Score(test$Research, predicted)
+```
+
+
+```{r MSE for Chance of Admit}
+graduateAdmissions.nnWithTrainAdmit <- neuralnet(Chance.of.Admit ~ GRE.Score + TOEFL.Score + University.Rating + SOP + LOR + CGPA, data = train, hidden = 5)
+predictedChanceOfAdmit = predict(graduateAdmissions.nnWithTrainAdmit, test)
+plot(graduateAdmissions.nnWithTrainAdmit)
+
+graduateAdmissions.nnWithTrainAdmit.MSE <- sum((predict(graduateAdmissions.nnWithTrainAdmit, data.frame(test)) - test$Chance.of.Admit) ^ 2) / nrow(test)
+```
+Turns out the cross-validated MSE of the neural network is very low. So we can predict with great accuracy how a student feels about their particular Grad application.
+
+```{r Summary}
+scoreTable <- cbind( (41) / 150, researchF1, researchSensitivity)
+colnames(scoreTable)<-c("Misclass", "F1 Score", "Sensitivity")
+rownames(scoreTable)<-c("Neural Network (5)")
+round(scoreTable,3)
+
+
+yHat <- predict(graduateAdmissions.nnWithTrainAdmit, test)
+yMax <- max(graduateAdmissions.data$Chance.of.Admit)
+yMin <- min(graduateAdmissions.data$Chance.of.Admit)
+
+yHatDenormalzed <- yHat * (yMax - yMin) + yMin
+yDenormalized <- graduateAdmissions.data$Chance.of.Admit[-ind]
+
+avgDiff <- sum(abs(yHatDenormalzed - yDenormalized)) / length(yDenormalized)
+
+
+scoreTable <- cbind( graduateAdmissions.nnWithTrainAdmit.MSE, avgDiff)
+colnames(scoreTable)<-c("MSE", "Avg difference")
+rownames(scoreTable)<-c("Neural Network (5)")
+round(scoreTable,5)
+```
+
+
+##PCA
+
+## With Response Variable Chance.of.Admit
+
+The variable we are interested in predicting, Chance.of.Admit, is the 9th variable.  
+
+Run PCA on the data and remove the response variable (chance of admit) and the unique identifier (serial number)
+```{r}
+set.seed(43849)
+pca.admin <- prcomp(as.matrix(admissionsData[,-c(1,9)]), scale = TRUE)
+summary(pca.admin)
+```
+
+To choose the number of principal components to keep, we can either use the Kaiser criterian, cumulative proportion/percent of variance, or a scree plot.  
+
+Using the Kaiser criterian, we keep all principal components with a standard deviation greater than 1 (since the data is scaled).  Hence the Kaiser criterian is telling us to keep only the first principal component.  
+
+I will now compare this with a scree plot.  
+```{r}
+plot(pca.admin, type="lines")
+```
+
+The above scree plot plots the monotonically decreasing eigenvalues and the location of an 'elbow' or plateau indicates the number of principal components.  The scree plot suggests probably 2 principal components.
+
+The first two principal components that will be retained explain 78% of the variation in the data.  We can now view the data projected onto the components using a biplot.  
+
+```{r}
+biplot(pca.admin)
+```
+
+
+```{r}
+plot(pca.admin$x[,1:2])
+```
+
+We can put data labels on the biplot by observation number 
+```{r}
+plot(pca.admin$x[,1:2], type = "n")
+text(pca.admin$x[,1:2], labels = 1:nrow(admissionsData))
+```
+
+It looks like there are two groups in the above principal component plots.  
+
+
+Take a look at the component loadings (eigenvectors) which provide the coefficients of the original variables, rounded to 2 decimal places.
+```{r}
+round(pca.admin$rotation[,1:2], 2)
+```
+
+These are the coefficients of the original variables.  The magnitudes are pretty similar for the first component, perhaps with the exception of research.  They are also all containing the same sign.  This is a little difficult to interpret, but most likely indicates that the first principal component is equally weighting all predictor variables, with the exception of research.  
+
+In the second component, the highest magnitude is the research aspect, along with the letter of recommendation. Perhaps this component indicates previous experience a student has.  A reference letter most likely comes from someone you have worked with, conducted research with, volunteered with, or TA'd for.  Therefore a good reference letter coupled with research experience could be indicative of research and other activities in both academic and non-academic settings.  
+
+
+We can now look at the four students who scored highest on PC1: 
+```{r}
+admissionsData[order(pca.admin$x[,1], decreasing = TRUE)[1:4],1:9]
+```
+
+It is noted that the four students who performed highest on PC1 all had a low belief of their chance of admit.  None of them had research, and all had a similar cumulative GPA.  In addition, the universities where all rated low (1 to be exact) and the students had similar GRE and TOEFL scores (well below the average).  These students in general seem to be ones who are not performing scoring very well across all predictors.  
+
+And the four students who scored highest on PC2:
+```{r}
+admissionsData[order(pca.admin$x[,2], decreasing = TRUE)[1:4], 1:9]
+```
+
+Notice that the four students who performed highest on PC2 all have research experience.  In general, these students are scoring better than the students in principal component 1 across the board.
+
+
+
+
+
+## With Response Variable Research
+
+The variable we are interested in predicting, Chance.of.Admit, is the 8th variable.  
+
+Run PCA on the data and remove the response variable (research) and the unique identifier (serial number)
+```{r}
+set.seed(43849)
+pca.admin2 <- prcomp(as.matrix(admissionsData[,-c(1,8)]), scale = TRUE)
+summary(pca.admin2)
+```
+
+To choose the number of principal components to keep, we can either use the Kaiser criterian, cumulative proportion/percent of variance, or a scree plot.  
+
+Using the Kaiser criterian, we keep all principal components with a standard deviation greater than 1 (since the data is scaled).  Hence the Kaiser criterian is telling us to keep the first principal component.  
+
+I will now compare this with a scree plot.  
+```{r}
+plot(pca.admin2, type="lines")
+```
+
+The above scree plot plots the monotonically decreasing eigenvalues and the location of an 'elbow' or plateau indicates the number of principal components.  The scree plot suggests probably 2 principal components.
+
+The first two principal components that will be retained explain 84% of the variation in the data.  We can now view the data projected onto the components using a biplot.  
+
+```{r}
+biplot(pca.admin2)
+```
+
+
+```{r}
+plot(pca.admin2$x[,1:2])
+```
+
+We can put data labels on the biplot by observation number 
+```{r}
+plot(pca.admin2$x[,1:2], type = "n")
+text(pca.admin2$x[,1:2], labels = 1:nrow(admissionsData))
+```
+
+It looks like there are two groups in the above principal component plots.  
+
+
+Take a look at the component loadings (eigenvectors) which provide the coefficients of the original variables, rounded to 2 decimal places.
+```{r}
+round(pca.admin2$rotation[,1:2], 2)
+```
+
+These are the coefficients of the original variables.  The magnitudes are extremely similar for the first component.  They are also all containing the same sign.  This is a little difficult to interpret again, but most likely indicates that the first principal component is equally weighting all predictor variables.  
+
+In the second component, the highest magnitude is the lettor of recommendation which has a negative sign.  Other variables with the same sign include the SOP score and the university rating.  Variables of opposite sign with higher magnitude include GRE Score, TOEFL Score, as well as CGPA and Chance of Admit having a lower magnitude.  Students who score high on this principal component, likely scored high on their standardized tests.  
+
+
+We can now look at the four students who scored highest on PC1: 
+```{r}
+admissionsData[order(pca.admin2$x[,1], decreasing = TRUE)[1:4],1:9]
+```
+
+The top four students in this first principal component are the same as the first four students in the previous PC1 (compared using Serial.No.).  Even when looking at the loadings, this principal component is very similar to the principal component in the previous section.  
+
+And the four students who scored highest on PC2:
+```{r}
+admissionsData[order(pca.admin2$x[,2], decreasing = TRUE)[1:4], 1:9]
+```
+
+As hypothesized above, the first four students in PC2 are scoring higher on their standardized tests (GRE.Score and TOEFL.Score).  These students are performing the at, or above average on these standardized tests.  However, they all have a below average score on SOP, and LOR.  The CGPA of the students scoring high on PC2 hovers fairly close to the mean.  This proves the initial hypothesis that standardized testing is most important for PC2.  
+
+
+## Trying to Cluster on the First Two Principal Components 
+
+It appeared that in the first PCA analysis, with the predictor chance.of.Admit removed, there were two groups in the remaining principal component plots.  Here we will perform hierarchical clustering to try to find these groups.  
+```{r}
+set.seed(574847)
+clusts <- hclust(dist(pca.admin$x[,1:2]), method="average")
+plot(clusts)
+plot(pca.admin$x[,1:2], col=cutree(clusts,2))
+pairs(admissionsData[,-c(1,9)], col=cutree(clusts,2))
+```
+
+These are not quiet the groups we noticed by eye.  Let's try clustering with a mixture model.  
+
+```{r, eval=FALSE}
+#install.packages("mclust")
+#install.packages("teigen")
+library(mclust)
+library(teigen)
+
+mPCA <- Mclust(dist(pca.admin$x[,1:2]), G=1:5, scale = TRUE)
+summary(mPCA)
+
+mPCA2 <- Mclust(dist(pca.admin$x[,1:2]), G = 2)
+summary(mPCA2)
+
+#could not get the margins to plot the below
+#plot(mPCA2)
+
+plot(pca.admin$x[,1:2], col=mPCA2$classification)
+
+
+set.seed(2521)
+
+#The below takes a long time and does not converge so I am commenting it out, but this is the code that was tried 
+tPCA <- teigen(as.matrix(dist(pca.admin$x[,1:2])), Gs=1:9, models="all", scale= FALSE, verbose = TRUE)
+
+
+```
+
+
+##Discriminant Analysis
+
+Discriminant analysis proved to not be a very fitting model as the boundary is not a linear or quadatric boundary.
+
+```{r}
+graduateAdmissions.csv <- read.csv("Admission_Predict_Ver1.1.csv")
+graduateAdmissions.data <- data.frame(graduateAdmissions.csv)
+graduateAdmissions.catData <- graduateAdmissions.data[, -c(1)]
+graduateAdmissions.catData$Chance.of.Admit <- factor(graduateAdmissions.data$Chance.of.Admit > 0.5)
+ind <- sample(1:nrow(graduateAdmissions.catData), 350)
+train <- graduateAdmissions.catData[ind,]
+test <- graduateAdmissions.catData[-ind,]
+
+# Predict Chance of Admit
+graduateAdmission.lda <- lda(Chance.of.Admit ~ ., data = train, cv = TRUE)
+# Perform LDA
+plda <- predict(graduateAdmission.lda, test)
+
+# Classification Table
+table(test$Chance.of.Admit, plda$class)
+# Classification Metrics
+LogLoss(plda$posterior[,2], as.numeric(test$Chance.of.Admit) - 1)
+Accuracy(test$Chance.of.Admit, plda$class)
+Sensitivity(test$Chance.of.Admit, plda$class)
+
+# Perform QDA on Chance of admission
+graduateAdmission.qda <- qda(Chance.of.Admit ~ ., data = train, cv = TRUE)
+
+# Run predictions
+pqda <- predict(graduateAdmission.qda, test)
+# Classification table for chance of admission
+table(test$Chance.of.Admit, pqda$class )
+
+# Metrics
+LogLoss(pqda$posterior[,2], as.numeric(test$Chance.of.Admit) - 1)
+Accuracy(test$Chance.of.Admit, pqda$class)
+Sensitivity(test$Chance.of.Admit, pqda$class)
+F1_Score(test$Chance.of.Admit, pqda$class)
+
+
+
+# Predict Research
+
+# Perform LDA on Research
+graduateAdmission.lda <- lda(Research ~ ., data = train, cv = TRUE)
+plda <- predict(graduateAdmission.lda, test)
+
+# Classificationtablee
+table(test$Research,plda$class)
+# Metrics
+LogLoss(plda$posterior[,2], test$Research)
+Accuracy(test$Research,plda$class)
+Sensitivity(test$Research,plda$class)
+
+# Perform QDA on research
+graduateAdmission.qda <- qda(Research ~ ., data = train, cv = TRUE)
+
+# Predicr research with QDA
+pqda <- predict(graduateAdmission.qda, test)
+
+# Class table
+table(test$Research, pqda$class)
+# Metrics
+LogLoss(pqda$posterior[,2], test$Research)
+Accuracy(test$Research, pqda$class)
+Sensitivity(test$Research, pqda$class)
+F1_Score(test$Research, pqda$class)
+```
 
 
