@@ -217,8 +217,7 @@ mean(msecv)
 ```{r, warning=FALSE}
 newboots <- list()
 bootsmod <- list()
-msebs <- NA
-B <- 5000
+B <- 10000
 bootcoef <- matrix(nrow = B, ncol=length(linear$coefficients))
 for(i in 1:B){
   newboots[[i]] <- admissionsData[sample(1:nrow(admissionsData), nrow(admissionsData), replace=TRUE),]
@@ -226,7 +225,6 @@ for(i in 1:B){
   for(j in 1:length(linear$coefficients)){
     bootcoef[i,j] <- bootsmod[[i]]$coefficients[j]
   }
-  #msebs[i] <- (predict(bootsmod[[i]], newdata = data.frame(Serial.No.[-i] + GRE.Score[-i] + TOEFL.Score[-i] +LOR[-i] + CGPA[-i] + Research[-i]))-Chance.of.Admit[i])^2
 }
 
 jk <- function(vec) {
@@ -236,10 +234,10 @@ jk <- function(vec) {
 #Standard Deviation from linear model coefficients
 summary(linear)$coefficients[,2]
 #Standard Deviation from non-parametric bootstrap on linear model coefficients
-c(sd(bootcoef[,1]),sd(bootcoef[,2]),sd(bootcoef[,3]),sd(bootcoef[,4]),sd(bootcoef[,5]),sd(bootcoef[,6]))
+c(sd(bootcoef[,1]),sd(bootcoef[,2]),sd(bootcoef[,3]),sd(bootcoef[,4]),sd(bootcoef[,5]))
 
 #Final Coefficients for bootstrapped linear model. 
-c(mean(bootcoef[,1]),mean(bootcoef[,2]),mean(bootcoef[,3]),mean(bootcoef[,4]),mean(bootcoef[,5]),mean(bootcoef[,6]))
+c(mean(bootcoef[,1]),mean(bootcoef[,2]),mean(bootcoef[,3]),mean(bootcoef[,4]),mean(bootcoef[,5]))
 ```
 
 
@@ -249,8 +247,6 @@ c(mean(bootcoef[,1]),mean(bootcoef[,2]),mean(bootcoef[,3]),mean(bootcoef[,4]),me
 ```{r, warning=FALSE}
 newboots <- list()
 bootsmod <- list()
-msebs <- NA
-B <- 5000
 bootcoef <- matrix(nrow = B, ncol=length(linear$coefficients))
 for(i in 1:B){
   newboots[[i]] <- admissionsData[sample(1:nrow(admissionsData), nrow(admissionsData), replace=TRUE),]
