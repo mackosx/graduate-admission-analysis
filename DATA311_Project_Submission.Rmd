@@ -13,18 +13,69 @@ library(mclust)
 library(cluster)
 library(fpc)
 library(boot)
+library(tree)
+library(MASS)
+library(randomForest)
 ```
 
-```{r}
+### Introduction
+
+```{r, echo=FALSE}
 admissionsData <- read.csv("Admission_Predict_Ver1.1.csv")
 #summary (admissionsData)
 attach(admissionsData)
 #Admission_Predict_Ver1.1 <- read.csv("~/Google Drive/Year 3 - S2 Class Files/DATA 311/Project/graduate-admissions/Admission_Predict_Ver1.1.csv")
 #View(Admission_Predict_Ver1.1)
+head(admissionsData[,-1])
 ```
 
-## Principal Component Analysis
-## With Response Variable Chance.of.Admit
+Data was collected from 500 prospective graduate students, including various scores achieved in the Test of English as a First Language (TOEFL) and Graduate Record Examinations (GRE), the strength of each candidates Statement of Purpose (SOP) and Letter of Recommendation (LOR), Undergraduate GPA (CGPA), and Research Experience. Finally, each candidate was polled about their confidence of being accepted into graduate school (Chance of Admit). 
+
+Using this data, we will perform analyses to attempt to predict variables within the dataset. The most obvious candidate for prediction is Chance of Admit, however, it may be worthwhile to attempt to predict other variables. In order to determine this, we will first run clustering on the dataset to see if any clear groups appear.
+
+### Clustering
+
+We begin by computing the respective pairwise distances in our data, and plotting the output.
+
+```{r, echo=FALSE}
+dg<-daisy(admissionsData, metric="gower")
+pdist <- cmdscale(d=dg)
+plot(pdist)
+```
+
+We quickly see that two clear groups appear. We can isolate these two groups using hierarchical clustering with single-linkage chaining. 
+
+```{r, , echo=FALSE, eval=FALSE}
+set.seed(413)
+km <- kmeans(pdist, centers = 2)
+#plotcluster(pdist, km$cluster)
+```
+
+```{r, echo=FALSE}
+hms <- hclust(na.omit(dg), method="single")
+#plot(hms)
+pairs(pdist, col=cutree(hms,2))
+#plot(pdist)
+```
+
+We can then use scatterplots to show the entirety of the data, while still keeping the groups intact, to see if we can determine which predictors most affect these clusters.
+
+
+```{r, echo=FALSE}
+pairs(admissionsData, col=cutree(hms,2))
+```
+
+We notice that, using the single linkage chaining from above, we can predict whether or not a student performs research almost perfectly.
+
+So, by applying Gower's Distance on all predictors and using single-linkage chaining, we have two clear clusters directly coinciding with the presence of a research variable. This tells us that we should use Research as a response variable in models, in addition to Chance of Admit.
+
+We can now perform analyses on the data to attempt to predict a candidate's Chance of Admission, as well as the presence of Research Experience. 
+
+### Principal Component Analysis
+
+Now that we've determined our response variables of interest using clustering, we can run Principal Component Analysis to further our understanding of our data. 
+
+### With Response Variable Chance.of.Admit
 
 The variable we are interested in predicting, Chance.of.Admit, is the 9th variable.  
 
@@ -158,37 +209,7 @@ admissionsData[order(pca.admin2$x[,2], decreasing = TRUE)[1:4], 1:9]
 As hypothesized above, the first four students in PC2 are scoring higher on their standardized tests (GRE.Score and TOEFL.Score).  These students are performing the at, or above average on these standardized tests.  However, they all have a below average score on SOP, and LOR.  The CGPA of the students scoring high on PC2 hovers fairly close to the mean.  This proves the initial hypothesis that standardized testing is most important for PC2.  
 
 
-### Clustering
 
-Naively, we can start by computing the respective pairwise distances, and try k-means clustering 
-```{r}
-dg<-daisy(test, metric="gower")
-pdist <- cmdscale(d=dg)
-plot(pdist)
-```
-
-Two clear groups appear, so we can use k-means clustering with $k=2$ to try and get those
-```{r}
-#set.seed(413)
-km <- kmeans(pdist, centers = 2)
-plotcluster(pdist, km$cluster)
-```
-
-That doesn't get us the groups we expect, so we can try hierarchical clustering instead.
-
-```{r}
-hms <- hclust(na.omit(dg), method="single")
-plot(hms)
-pairs(pdist, col=cutree(hms,2))
-#plot(pdist)
-```
-With hierarchical clustering, we can get the groups we expect using single linkage chaining. Since this was a naive attempt using all variables, let's see if we can determine what actually affects which data goes into which cluster. 
-```{r}
-pairs(test, col=cutree(hms,2))
-```
-We notice that, using the single linkage chaining from above, we can predict whether or not a student performs research almost perfectly. Additionally, we get decent results pertaining to the Chance of Admission and the GRE Score. Based on these clustering results, our two groups (Research and Non-Research) divide up pretty well as follows: In general, Research has a higher chance of admission than Non-Research, as well as a higher GRE and TOEFL score. 
-
-So, by applying Gower's Distance on all predictors and using single-linkage chaining, we have two clear clusters directly coinciding with the presence of a research variable. From here, we can try and run some predictive models using research as the response variable.
 
 
 ##Logmod Analysis and Plots
@@ -281,7 +302,7 @@ msebs <- NA
 B <- 5000
 bootcoef <- matrix(nrow = B, ncol=length(linear$coefficients))
 for(i in 1:B){
-  newboots[[i]] <- test[sample(1:nrow(admissionsData), nrow(admissionsData), replace=TRUE),]
+  newboots[[i]] <- admissionsData[sample(1:nrow(admissionsData), nrow(admissionsData), replace=TRUE),]
   bootsmod[[i]] <- lm(University.Rating~., data=newboots[[i]])
   for(j in 1:length(linear$coefficients)){
     bootcoef[i,j] <- bootsmod[[i]]$coefficients[j]
@@ -374,4 +395,99 @@ msecv[i] <- (predict(cvlm[[i]], newdata = data.frame(TOEFL.Score[-i] + SOP[-i] +
 #output mean of MSE
 mean(msecv)
 ```
+
+#Trees and Forests
+
+```{r}
+admissionsData <- admissionsData[,-1]
+#head(admissionsData)
+dim(admissionsData)
+trainindex <- sample(1:nrow(admissionsData), 350)
+admissionsTrain <- admissionsData[trainindex, ]
+admissionsTest <- admissionsData[-trainindex, ]
+```
+
+#Chance of Admittance 
+I am going to do a 70/30 split of training and testing data. There are 500 observations, so we will have 350 training observations and 150 testing points. 
+```{r}
+
+set.seed(110101010)
+admissionTree <- tree(Chance.of.Admit~., data = admissionsTrain)
+plot(admissionTree)
+text(admissionTree, pretty=0)
+
+
+admissionTreeCV <- cv.tree(admissionTree, FUN = prune.tree, K = 10)
+plot(admissionTreeCV, type = "b")
+admissionTreeCV
+
+admissionTreeCV$dev
+admissionTreeCV$size
+which.min(admissionTreeCV$dev)
+```
+Cross validation suggest 7 nodes would be best, so we will prune the tree using 7 terminal nodes. 
+
+```{r}
+pruneAdmissionTreeCV <- prune.tree(admissionTree, best=7)
+plot(pruneAdmissionTreeCV)
+text(pruneAdmissionTreeCV, pretty = 0)
+summary(pruneAdmissionTreeCV)
+
+
+```
+
+
+```{r}
+
+set.seed(1000101010)
+admission.rf <- randomForest(Chance.of.Admit~., data = admissionsTrain, importance = TRUE)
+admission.rf
+```
+
+Since Random Forest uses out-of-bag which is similar to cross validation so no cross validation was performed. We can look at the importance of the variables.
+
+
+```{r}
+varImpPlot(admission.rf)
+```
+
+As seen from the Importance Plot the most important variables are CGPA, GRE Score and TOEFL scores when using chance of admission as a response variable. 
+
+
+#Research
+
+```{r}
+set.seed(1388582293)
+researchTree <- tree(Research~., data = admissionsTrain)
+plot(researchTree)
+text(researchTree, pretty=0)
+
+
+researchTreeCV <- cv.tree(researchTree, FUN = prune.tree, K = 10)
+plot(researchTreeCV, type = "b")
+which.min(researchTreeCV$dev)
+researchTreeCV$dev
+
+researchTreeCV$dev
+researchTreeCV$size
+which.min(researchTreeCV$dev)
+```
+
+Cross Validation Suggests 3 terminal nodes would be best.
+
+```{r}
+pruneResearchTreeCV <- prune.tree(researchTree, best=3)
+plot(pruneResearchTreeCV)
+text(pruneResearchTreeCV, pretty = 0)
+summary(pruneResearchTreeCV)
+```
+
+```{r}
+set.seed(1413755523)
+research.rf <- randomForest(Research~., data = admissionsTrain, importance = TRUE)
+research.rf
+varImpPlot(research.rf)
+
+```
+
 

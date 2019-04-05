@@ -1,0 +1,166 @@
+---
+title: "Project PCA"
+author: "Chelsey"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+Loading in and exploring the data 
+```{r}
+admissionsData <- read.csv("Admission_Predict_Ver1.1.csv", header = TRUE)
+#head(admissionsData)
+```
+
+The variable we are interested in predicting, Chance.of.Admit, is the 9th variable.  
+
+Split the data into test and train data.  
+```{r}
+set.seed(10101)
+sample <- sample.int(n = nrow(admissionsData), size = floor(.75*nrow(admissionsData)), replace = FALSE, prob = NULL)
+train <- admissionsData[sample,]
+test <- admissionsData[-sample,]
+```
+
+Run PCA on the data and remove the response variable
+```{r}
+set.seed(43849)
+pca.admin <- prcomp(as.matrix(admissionsData[,-c(9)]), scale = TRUE)
+summary(pca.admin)
+```
+
+To choose the number of principal components to keep, we can either use the Kaiser criterian, cumulative proportion/percent of variance, or a scree plot.  
+
+Using the Kaiser criterian, we keep all principal components with a standard deviation greater than 1 (since the data is scaled).  Hence the Kaiser criterian is telling us to keep the first two principal components.
+
+I will now compare this with a scree plot.  
+```{r}
+plot(pca.admin, type="lines")
+```
+
+The above scree plot plots the monotonically decreasing eigenvalues and the location of an 'elbow' or plateau indicates the number of principal components.  The scree plot suggests probably 2 principal components, which correlates with the Kaiser criterian.  
+
+The first two principal components that will be retained explain 72% of the variation in the data.  We can now view the data projected onto the components using a biplot.  
+
+```{r}
+biplot(pca.admin)
+```
+
+The PCA plot above is suggesting that serial number has no relation to the other factors.  In fact, this shouldn't affect the data at all.  I will remove this column (column 1) as well and reperform the PCA.  
+
+
+```{r}
+set.seed(43849)
+pca.admin2 <- prcomp(as.matrix(admissionsData[,-c(1,9)]), scale = TRUE)
+summary(pca.admin)
+```
+
+To choose the number of principal components to keep, we can either use the Kaiser criterian, cumulative proportion/percent of variance, or a scree plot.  
+
+Using the Kaiser criterian, we keep all principal components with a standard deviation greater than 1 (since the data is scaled).  Hence the Kaiser criterian is telling us to keep the first principal component.
+
+However, the cumulative proportion of variance explained from the first principal component is only 67.5%.  The first two components might be better as these explain 78.1% of the data.  
+
+I will now compare this with a scree plot. 
+
+```{r}
+plot(pca.admin2, type="lines")
+```
+
+The scree plot suggests 2 principal components.  
+
+We can now view those with a biplot.  
+```{r}
+biplot(pca.admin2)
+```
+
+
+```{r}
+plot(pca.admin2$x[,1:2])
+```
+
+We can put data labels on the biplot by observation number 
+```{r}
+plot(pca.admin2$x[,1:2], type = "n")
+text(pca.admin2$x[,1:2], labels = 1:nrow(admissionsData))
+```
+
+Take a look at the component loadings (eigenvectors) which provide the coefficients of the original variables, rounded to 2 decimal places.
+```{r}
+round(pca.admin2$rotation[,1:2], 2)
+```
+
+These are the coefficients of the original variables.  The magnitudwes are pretty similar for the first component, perhaps with the exception of research.  They are also all containing the same sign.  WHAT DOES THIS MEAN? 
+
+The second component is a little less clear.  The highest magnitude is the research aspect, alog with the letter of recommendation.  Perhaps this component indicates previous experience you have.  A reference letter most likely comes from someone you have worked with, conducted research with, volunteered with, or TA'd for.  Therefore this could be indicative of research and other activities in both academic and non-academic settings.
+
+To explore the second principal component closer, let's look at the larger magnitudes.  
+```{r}
+round(pca.admin2$rotation[,2],2)[abs(pca.admin2$rotation[,2]) > .2]
+```
+
+We have a very large positive magnitude for research and a positive magnitude for GRE score.  The loading of university rating, SOP, and LOR is negative.  HOW DO I INTERPRET THIS? 
+
+IS PC1 PEOPLE WHO ARE NOT AS LIKELY TO GET IN AND PC2 IS PEOPLE WHO ARE MORE LIKELY TO GET IN? NO!
+
+We can now look at the four students who scored highest on PC1: 
+```{r}
+admissionsData[order(pca.admin2$x[,1], decreasing = TRUE)[1:4],1:9]
+```
+
+```{r}
+admissionsData[order(pca.admin2$x[,2], decreasing = TRUE)[1:4], 1:9]
+```
+
+## Clustering on PCA 
+
+We can prove that if we do NOT reduce the components, then the distance between observations are retained.  
+```{r}
+test1 <- hclust(dist(scale(admissionsData[,-c(9)])))
+plot(test1)
+```
+
+IF I AM CORRECT, THIS SHOULD MATCH UP WITH WHAT SOMEONE GETS FROM DOING HIERARCHICAL CLUSTERING ON THE DATA WITHOUT THE PCA.  
+
+Now we can do hierarchical clustering with respect to the principal components.  
+```{r}
+test2 <- hclust(dist(pca.admin2$x))
+plot(test2)
+```
+
+
+It is difficult to see, but these should be the same dendrograms.  We can use R to compare the distance matrices to compare the pairwise distances contained in the objects. Note that here I still need to remove the response column of chance of admission (9) and the unique identifier of the serial number (1).  
+```{r}
+all.equal(dist(scale(admissionsData[,-c(1,9)])), dist(pca.admin2$x), check.attributes = FALSE)
+```
+
+Since this is true, it is saying that these distance matrices are the exact same.  On the other hand, if we reduce the components (say to the two we used earlier), then we should see some loss of information.  Let's see how much.  
+```{r}
+all.equal(dist(scale(admissionsData[,-c(1,9)])), dist(pca.admin$x[,1:2]), check.attributes = FALSE)
+```
+
+Clustering applied to the scores on the first two components.  
+```{r}
+pcclust <- hclust(dist(pca.admin2$x[,1:2]))
+plot(pcclust)
+```
+
+NOTE: I DO NOT REALLY KNOW WHAT I AM TRYING TO CLUSTER ON HERE .... MAYBE I CAN MEET WITH THE PERSON WHO IS DOING HC TO COMBINE THESE IDEAS?
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
